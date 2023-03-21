@@ -53,7 +53,8 @@ public static class AutoMapperExtensions
 {
     public static IMappingExpression<TSource, TDestination> UnmapAllNulls<TSource, TDestination>(this IMappingExpression<TSource, TDestination> expression)
     {
-        expression.ForAllMembers(opts => opts.Condition((_, _, srcMember) => srcMember != null));
+        expression.ForAllMembers(opts => 
+            opts.Condition((_, _, srcMember) => srcMember is not null));
         return expression;
     }
 }

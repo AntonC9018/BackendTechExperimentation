@@ -71,16 +71,29 @@ app.MapPost("/people", async(
     }
     else
     {
+        person.Projects.Sort((a, b) =>
+        {
+            var v0 = a.Id ?? default;
+            var v1 = b.Id ?? default;
+            return v1.CompareTo(v0);
+        });
+        
         var projectIds = person.Projects
             .Select(p => p.Id)
-            .SelectNonZeroValue();
+            .SelectNonZeroValue()
+            .ToHashSet();
         
         entity = await data.Set<Person>()
-            .Include(p => 
-                p.Projects.Where(proj => projectIds.Contains(proj.Id)))
+            .Include(p => p.Projects
+                .OrderBy(proj => -proj.Id)
+                .Where(proj => projectIds.Contains(proj.Id)))
             .FirstAsync(p => p.Id == person.Id);
+
+        if (entity.Projects.Count != projectIds.Count)
+            throw new Exception("Invalid project ids present in request.");
         
         mapper.Map(person, entity);
+        
         data.ChangeTracker.TrackGraph(entity, e =>
         {
             if (e.Entry.IsKeySet)
