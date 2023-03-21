@@ -46,6 +46,17 @@ public class ProjectResponseDto
     public string ProjectName { get; set; }
 }
 
+public class NameDto
+{
+    public string Name { get; set; }
+}
+
+public class CastAndValue<TCastForInterface, TValue>
+{
+    public TCastForInterface Cast { get; set; }
+    public TValue Value { get; set; }
+}
+
 #pragma warning restore CS8618
 
 
@@ -82,6 +93,13 @@ public class MapperProfile : Profile
         CreateMap<ProjectRequestDto, Project>(MemberList.Source)
             .UnmapAllNulls();
         CreateMap<Project, ProjectResponseDto>(MemberList.Destination);
+        
+        CreateMap<Project, NameDto>(MemberList.Destination)
+            .ForMember(d => d.Name, o => o.MapFrom(s => s.ProjectName))
+            .ReverseMap();
+
+        CreateMap<Project, CastAndValue<NameDto, Project>>()
+            .ForMember(d => d.Value, o => o.MapFrom(s => s))
+            .ForMember(d => d.Cast, o => o.MapFrom(s => s));
     }
 }
-

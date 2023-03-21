@@ -1,4 +1,5 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using efcore_transactions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -105,6 +106,38 @@ app.MapPost("/people", async(
     
     await data.SaveChangesAsync();
     return mapper.Map<PersonResponseDto>(entity);
+});
+
+
+app.MapGet("names", async (
+    [FromServices] ApplicationDbContext context,
+    [FromServices] IMapper mapper) =>
+{
+
+    var q = context.Set<Project>()
+        .Select(x => new { Value = x, Name = x.ProjectName })
+        .Where(x => x.Name == "A")
+        .Select(x => x.Value.Id);
+    return await q.ToListAsync();
+    // var q1 = context
+    //     .Set<Project>()
+    //     .ProjectTo<NameDto>(mapper.ConfigurationProvider)
+    //     .Where(x => x.Name == "A")
+    //     .ProjectTo<Project>(mapper.ConfigurationProvider);
+    // return await q1.ToListAsync();
+    // return new
+    // {
+    //     @interface = new
+    //     {
+    //         people = await context.Set<Person>().SelectNameByInterface().ToListAsync(),
+    //         projects = await context.Set<Project>().SelectNameByInterface().ToListAsync()  
+    //     },
+    //     generic = new
+    //     {
+    //         people = await context.Set<Person>().SelectNameByInterfaceGeneric().ToListAsync(),
+    //         projects = await context.Set<Project>().SelectNameByInterfaceGeneric().ToListAsync()  
+    //     },
+    // };
 });
 
 app.Run();
