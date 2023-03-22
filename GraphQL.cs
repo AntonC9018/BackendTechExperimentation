@@ -1,7 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Reflection;
 using HotChocolate.Resolvers;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace efcore_transactions;
 
@@ -24,7 +29,7 @@ public static class GraphQlHelper
     
         where TEntity : class
     {
-        return EfQuery<TEntity, ObjectType<TEntity>>(descriptor, name, middlewareFlags);
+        return EfQuery<TEntity, EfObjectType<TEntity>>(descriptor, name, middlewareFlags);
     }
     
     public static IObjectFieldDescriptor EfQueryType<TQuery>(
@@ -108,5 +113,40 @@ public class QueryType : ObjectType
         descriptor.EfQueryEntity<Project>();
         descriptor.EfQueryEntity<Person>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
         descriptor.EfQueryEntity<Project>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
+    }
+}
+
+public class EfObjectType<T> : ObjectType<T>
+    where T : class
+{
+    protected static readonly IReadOnlyList<PropertyInfo> _IdProperties;
+    protected static readonly IReadOnlyList<PropertyInfo> _IgnoredProperties;
+    
+    static EfObjectType()
+    {
+        var properties = typeof(T).GetProperties(
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
+        
+        _IdProperties = properties.Where(
+            p => p.Name.EndsWith("Id")
+                 || p.GetCustomAttributesData()
+                     .Any(a => 
+                         a.AttributeType == typeof(KeyAttribute) || a.AttributeType == typeof(ForeignKey)))
+            .ToArray();
+        _IgnoredProperties = properties.Where(
+            p => p.GetCustomAttributesData()
+                .Any(a => a.AttributeType == typeof(PersonalDataAttribute)))
+            .ToArray();
+    }
+    
+    protected override void Configure(IObjectTypeDescriptor<T> descriptor)
+    {
+        descriptor.BindFieldsImplicitly();
+
+        foreach (var idProp in _IdProperties)
+            descriptor.Field(idProp).ID();
+        
+        foreach (var ignoredProp in _IgnoredProperties)
+            descriptor.Field(ignoredProp).Ignore();
     }
 }
