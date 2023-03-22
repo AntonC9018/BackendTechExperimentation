@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using HotChocolate.Resolvers;
 using Microsoft.EntityFrameworkCore.Internal;
 
@@ -23,10 +24,7 @@ public static class GraphQlHelper
     
         where TEntity : class
     {
-        var entityType = typeof(TEntity);
-        name ??= GetQueryNameForType(entityType, middlewareFlags);
-        var f = ConfigureEfQuery<ObjectType<TEntity>>(descriptor, name, middlewareFlags);
-        return f.Resolve(GetSetAsQueryable<TEntity>);
+        return EfQuery<TEntity, ObjectType<TEntity>>(descriptor, name, middlewareFlags);
     }
     
     public static IObjectFieldDescriptor EfQueryType<TQuery>(
@@ -42,9 +40,10 @@ public static class GraphQlHelper
             objectTypeType = objectTypeType.BaseType!;
         var entityType = objectTypeType.GetGenericArguments()[0];
         
-        name ??= GetQueryNameForType(entityType, middlewareFlags);
-        var f = ConfigureEfQuery<TQuery>(descriptor, name, middlewareFlags);
-        return f.Resolve(GetResolver(entityType), typeof(IQueryable<>).MakeGenericType(entityType));
+        return (IObjectFieldDescriptor) typeof(GraphQlHelper)
+            .GetMethod("EfQuery", BindingFlags.Public | BindingFlags.Static)!
+            .MakeGenericMethod(entityType, typeof(TQuery))
+            .Invoke(null, new object?[] { descriptor, name, middlewareFlags })!;
     }
     
     public static IObjectFieldDescriptor EfQuery<TEntity, TQuery>(
@@ -57,7 +56,10 @@ public static class GraphQlHelper
     {
         name ??= GetQueryNameForType(typeof(TEntity), middlewareFlags);
         var f = ConfigureEfQuery<TQuery>(descriptor, name, middlewareFlags);
-        return f.Resolve(GetSetAsQueryable<TEntity>);
+        return f.Resolve(ctx => ctx
+            .DbContext<ApplicationDbContext>()
+            .Set<TEntity>()
+            .AsQueryable());
     }
     
     // How do we apply the convention that hot chocolate uses, instead of redefining it??
@@ -96,46 +98,16 @@ public static class GraphQlHelper
 
         return f;
     }
-
-    // Pain point #1: the continuation
-    private static IQueryable<T> GetSetAsQueryable<T>(IResolverContext ctx)
-        where T : class
-    {
-        var q = ctx
-            .DbContext<ApplicationDbContext>()
-            .Set<T>()
-            .AsQueryable();
-        return q;
-    }
-    
-    private static ValueTask<object?> GetSetAsQueryableObjectTask<T>(IResolverContext ctx)
-        where T : class
-    {
-        return ValueTask.FromResult<object?>(GetSetAsQueryable<T>(ctx));
-    }
-
-    private static FieldResolverDelegate GetResolver(Type entityType)
-    {
-        var method = typeof(GraphQlHelper).GetMethod("GetSetAsQueryableObjectTask", BindingFlags.NonPublic | BindingFlags.Static)!;
-        var genericMethod = method.MakeGenericMethod(entityType);
-        var resolverFunc = genericMethod.CreateDelegate<FieldResolverDelegate>();
-        return resolverFunc;
-    }
-
-    private static void EfResolve(IObjectFieldDescriptor descriptor, Type entityType)
-    {
-        
-    }
 }
 
 public class QueryType : ObjectType
 {
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
-        descriptor.EfQuery<Person, PersonType>();
+        descriptor.EfQueryType<PersonType>();
         descriptor.EfQueryType<ProjectType>();
         descriptor.EfQueryType<PersonType>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
-        descriptor.EfQueryEntity<Project>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
+        descriptor.EfQueryType<ProjectType>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
     }
 }
 
