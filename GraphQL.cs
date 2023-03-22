@@ -19,13 +19,16 @@ public class Query
 
 public class QueryType : ObjectType
 {
-    private IObjectFieldDescriptor EfQuery<TEntity>(IObjectTypeDescriptor descriptor) where TEntity : class
+    private IObjectFieldDescriptor EfQuery<TQuery, TEntity>(IObjectTypeDescriptor descriptor) 
+        where TQuery : ObjectType<TEntity>
+        where TEntity : class
     {
         var name = typeof(TEntity).Name;
         name = name[.. 1].ToLower() + name[1 ..];
         
         return descriptor
             .Field(name)
+            .Type(typeof(NonNullType<ListType<NonNullType<TQuery>>>))
             .Resolve(ctx =>
             {
                 return ctx
@@ -40,8 +43,8 @@ public class QueryType : ObjectType
     
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
-        EfQuery<Person>(descriptor);
-        EfQuery<Project>(descriptor);
+        EfQuery<PersonType, Person>(descriptor);
+        EfQuery<ProjectType, Project>(descriptor);
     }
 }
 

@@ -32,8 +32,6 @@ builder.Services.AddEndpointsApiExplorer();
     graph.InitializeOnStartup();
     graph.AddTransactionScopeHandler<DefaultTransactionScopeHandler>();
     graph.AddMutationConventions(applyToAllMutations: true);
-    graph.AddType<ProjectType>();
-    graph.AddType<PersonType>();
 }
 
 var app = builder.Build();
