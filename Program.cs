@@ -25,7 +25,7 @@ builder.Services.AddEndpointsApiExplorer();
 {
     var graph = builder.Services.AddGraphQLServer();
     graph.AddGraphQLServer();
-    graph.AddQueryType<Query>();
+    graph.AddQueryType<QueryType>();
     graph.AddProjections();
     graph.AddFiltering();
     graph.AddSorting();
@@ -39,5 +39,6 @@ builder.Services.AddEndpointsApiExplorer();
 var app = builder.Build();
 
 app.MapGraphQL();
+app.MapGraphQLSchema();
 
 app.Run();
