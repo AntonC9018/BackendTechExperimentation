@@ -5,10 +5,14 @@ using HotChocolate.Execution.Processing;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ApplicationDbContext>(c =>
+string projectManagementConnectionString = builder.Configuration.GetConnectionString("ProjectManagement")!;
+
+void ConfigureDbContext(DbContextOptionsBuilder c)
 {
-    c.UseSqlServer(builder.Configuration.GetConnectionString("ProjectManagement"));
-});
+    c.UseSqlServer(projectManagementConnectionString);
+}
+
+builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(ConfigureDbContext);
 builder.Services.AddAutoMapper(c =>
 {
     c.AddProfile<MapperProfile>();
@@ -21,7 +25,6 @@ builder.Services.AddAutoMapper(c =>
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
-
 {
     var graph = builder.Services.AddGraphQLServer();
     graph.AddGraphQLServer();
@@ -32,7 +35,8 @@ builder.Services.AddEndpointsApiExplorer();
     graph.InitializeOnStartup();
     graph.AddTransactionScopeHandler<DefaultTransactionScopeHandler>();
     graph.AddMutationConventions(applyToAllMutations: true);
-    graph.AddDirectiveType<MyDirectiveType>();
+    // graph.AddDirectiveType<MyDirectiveType>();
+    // graph.ModifyOptions(opt => opt.UseXmlDocumentation = true);
 }
 
 var app = builder.Build();
