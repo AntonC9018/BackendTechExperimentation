@@ -32,6 +32,7 @@ builder.Services.AddEndpointsApiExplorer();
     graph.InitializeOnStartup();
     graph.AddTransactionScopeHandler<DefaultTransactionScopeHandler>();
     graph.AddMutationConventions(applyToAllMutations: true);
+    graph.AddDirectiveType<MyDirectiveType>();
 }
 
 var app = builder.Build();

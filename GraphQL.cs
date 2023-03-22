@@ -48,11 +48,38 @@ public class QueryType : ObjectType
     }
 }
 
+
+public class MyDirective
+{
+    public string Name { get; set; }
+}
+
+public class MyDirectiveType : DirectiveType<MyDirective>
+{
+    protected override void Configure(
+        IDirectiveTypeDescriptor<MyDirective> descriptor)
+    {
+        descriptor.Name("my");
+        descriptor.Location(DirectiveLocation.FieldDefinition);
+
+        descriptor.Use((next, directive) => context =>
+        {
+            context.Result = directive.AsValue<MyDirective>().Name;
+            // return next.Invoke(context);
+            return ValueTask.CompletedTask;
+        });
+    }
+}
+
 public class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
         descriptor.BindFieldsImplicitly();
+        descriptor.Field(x => x.Name).Directive(new MyDirective
+        {
+            Name = "Bar"
+        });
         descriptor.Ignore(x => x.Id);
     }
 }
