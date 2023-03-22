@@ -22,7 +22,6 @@ builder.Services.AddAutoMapper(c =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 
-
 {
     var graph = builder.Services.AddGraphQLServer();
     graph.AddGraphQLServer();
