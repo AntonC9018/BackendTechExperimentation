@@ -146,10 +146,10 @@ public class EfObjectType<T> : ObjectType<T>
     {
         descriptor.BindFieldsImplicitly();
 
-        foreach (var idProp in _IdProperties)
+        foreach (var idProp in _idProperties)
             descriptor.Field(idProp).ID();
         
-        foreach (var ignoredProp in _IgnoredProperties)
+        foreach (var ignoredProp in _ignoredProperties)
             descriptor.Field(ignoredProp).Ignore();
     }
 }
