@@ -119,21 +119,24 @@ public class QueryType : ObjectType
 public class EfObjectType<T> : ObjectType<T>
     where T : class
 {
-    protected static readonly IReadOnlyList<PropertyInfo> _IdProperties;
-    protected static readonly IReadOnlyList<PropertyInfo> _IgnoredProperties;
+    protected readonly IReadOnlyList<PropertyInfo> _idProperties;
+    protected readonly IReadOnlyList<PropertyInfo> _ignoredProperties;
     
-    static EfObjectType()
+    public EfObjectType()
     {
         var properties = typeof(T).GetProperties(
             BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
         
-        _IdProperties = properties.Where(
+        _idProperties = properties.Where(
             p => p.Name.EndsWith("Id")
                  || p.GetCustomAttributesData()
                      .Any(a => 
-                         a.AttributeType == typeof(KeyAttribute) || a.AttributeType == typeof(ForeignKey)))
+                         a.AttributeType == typeof(KeyAttribute)
+#pragma warning disable EF1001
+                         || a.AttributeType == typeof(ForeignKey)))
+#pragma warning restore EF1001
             .ToArray();
-        _IgnoredProperties = properties.Where(
+        _ignoredProperties = properties.Where(
             p => p.GetCustomAttributesData()
                 .Any(a => a.AttributeType == typeof(PersonalDataAttribute)))
             .ToArray();
