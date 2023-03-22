@@ -104,25 +104,9 @@ public class QueryType : ObjectType
 {
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
-        descriptor.EfQueryType<PersonType>();
-        descriptor.EfQueryType<ProjectType>();
-        descriptor.EfQueryType<PersonType>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
-        descriptor.EfQueryType<ProjectType>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
-    }
-}
-
-public class PersonType : ObjectType<Person>
-{
-    protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
-    {
-        descriptor.BindFieldsImplicitly();
-    }
-}
-
-public class ProjectType : ObjectType<Project>
-{
-    protected override void Configure(IObjectTypeDescriptor<Project> descriptor)
-    {
-        descriptor.BindFieldsImplicitly();
+        descriptor.EfQueryEntity<Person>();
+        descriptor.EfQueryEntity<Project>();
+        descriptor.EfQueryEntity<Person>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
+        descriptor.EfQueryEntity<Project>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
     }
 }
