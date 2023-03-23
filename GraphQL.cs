@@ -1,11 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
 using System.Reflection;
-using HotChocolate.Resolvers;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace efcore_transactions;
@@ -119,37 +116,64 @@ public class QueryType : ObjectType
 public class EfObjectType<T> : ObjectType<T>
     where T : class
 {
-    protected readonly IReadOnlyList<PropertyInfo> _idProperties;
-    protected readonly IReadOnlyList<PropertyInfo> _ignoredProperties;
+    protected readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     
-    public EfObjectType()
+    public EfObjectType(IDbContextFactory<ApplicationDbContext> dbContextFactory)
     {
-        var properties = typeof(T).GetProperties(
-            BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
-        
-        _idProperties = properties.Where(
-            p => p.Name.EndsWith("Id")
-                 || p.GetCustomAttributesData()
-                     .Any(a => 
-                         a.AttributeType == typeof(KeyAttribute)
-#pragma warning disable EF1001
-                         || a.AttributeType == typeof(ForeignKey)))
-#pragma warning restore EF1001
-            .ToArray();
-        _ignoredProperties = properties.Where(
-            p => p.GetCustomAttributesData()
-                .Any(a => a.AttributeType == typeof(PersonalDataAttribute)))
-            .ToArray();
+        _dbContextFactory = dbContextFactory;
     }
     
     protected override void Configure(IObjectTypeDescriptor<T> descriptor)
     {
         descriptor.BindFieldsImplicitly();
-
-        foreach (var idProp in _idProperties)
-            descriptor.Field(idProp).ID();
         
-        foreach (var ignoredProp in _ignoredProperties)
-            descriptor.Field(ignoredProp).Ignore();
+        using var dbContext = _dbContextFactory.CreateDbContext();
+        var model = dbContext.Model;
+
+        IObjectFieldDescriptor CreateKeyField(IReadOnlyList<IProperty> props, Type targetEntityType)
+        {
+            if (props.Count > 1)
+                throw new NotImplementedException();
+
+            var prop = props[0];
+            var pointingAtEntity = targetEntityType;
+            return descriptor.Field(prop.PropertyInfo!).ID(pointingAtEntity.Name);
+        }
+
+        var entityModel = model.FindEntityType(typeof(T))!;
+
+        {
+            var key = entityModel.GetKeys().Single(k => k.IsPrimaryKey());
+            var props = key.Properties;
+            if (props.Count > 1)
+                throw new NotImplementedException();
+            
+            var prop = props[0];
+            descriptor
+                .Field(prop.PropertyInfo!)
+                .ID(typeof(T).Name);
+
+            // Nodes won't work with ef core
+            // https://github.com/ChilliCream/graphql-platform/issues/5966
+            // descriptor
+            //     .ImplementsNode()
+            //     .IdField(prop.PropertyInfo!)
+            //     .ResolveNode(async (ctx, id) =>
+            //     {
+            //         return ctx.DbContext<ApplicationDbContext>().Set<T>();
+            //     });
+        }
+
+        foreach (var key in entityModel.GetForeignKeys())
+        {
+            var props = key.Properties;
+            if (props.Count > 1)
+                continue;
+
+            var prop = props[0];
+            descriptor
+                .Field(prop.PropertyInfo!)
+                .ID(key.PrincipalEntityType.Name);
+        }
     }
 }
