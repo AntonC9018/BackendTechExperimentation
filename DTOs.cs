@@ -51,10 +51,19 @@ public class NameDto
     public string Name { get; set; }
 }
 
-public class CastAndValue<TCastForInterface, TValue>
+public class GraphQlPersonDto
 {
-    public TCastForInterface Cast { get; set; }
-    public TValue Value { get; set; }
+    public ID Id { get; set; }
+    public string Name { get; set; }
+    
+    // Note: intentionally misspelt
+    public List<GraphQlProjectDto> Projets { get; set; } = new();
+}
+
+public class GraphQlProjectDto
+{
+    public ID Id { get; set; }
+    public string Name { get; set; }
 }
 
 #pragma warning restore CS8618
@@ -98,8 +107,19 @@ public class MapperProfile : Profile
             .ForMember(d => d.Name, o => o.MapFrom(s => s.ProjectName))
             .ReverseMap();
 
-        CreateMap<Project, CastAndValue<NameDto, Project>>()
-            .ForMember(d => d.Value, o => o.MapFrom(s => s))
-            .ForMember(d => d.Cast, o => o.MapFrom(s => s));
+        {
+            CreateMap<GraphQlPersonDto, Person>(MemberList.Source)
+                .ForMember(d => d.Projects, o => o.MapFrom(s => s.Projets))
+                .ReverseMap()
+                // .ForAllMembers(opt => opt.ExplicitExpansion())
+                ;
+        }
+        {
+            CreateMap<GraphQlProjectDto, Project>(MemberList.Source)
+                .ForMember(d => d.ProjectName, o => o.MapFrom(s => s.Name))
+                .ReverseMap()
+                .ForAllMembers(opt => opt.ExplicitExpansion())
+                ;
+        }
     }
 }

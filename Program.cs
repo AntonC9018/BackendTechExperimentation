@@ -38,6 +38,7 @@ builder.Services.AddEndpointsApiExplorer();
     // graph.AddGlobalObjectIdentification();
     // graph.AddDirectiveType<MyDirectiveType>();
     // graph.ModifyOptions(opt => opt.UseXmlDocumentation = true);
+    // graph.AddType<ProjectDtoType>();
 }
 
 var app = builder.Build();

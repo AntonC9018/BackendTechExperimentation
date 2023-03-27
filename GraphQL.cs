@@ -1,9 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Reflection;
-using Microsoft.AspNetCore.Identity;
+﻿using System.Reflection;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace efcore_transactions;
 
@@ -100,16 +98,57 @@ public static class GraphQlHelper
 
         return f;
     }
+    
+    
+    public static IObjectFieldDescriptor EfQueryDto<TEntity, TDto, TQuery>(
+        this IObjectTypeDescriptor descriptor)
+    
+        where TEntity : class
+        where TDto : class
+        where TQuery : ObjectType<TDto>
+    {
+        return descriptor
+            .Field("test")
+            .Type<NonNullType<ListType<NonNullType<TQuery>>>>()
+            .UseDbContext<ApplicationDbContext>()
+            .UsePaging<NonNullType<TQuery>>()
+            .UseProjection()
+            .UseFiltering()
+            .UseSorting()
+            .Resolve(ctx => ctx
+                .DbContext<ApplicationDbContext>()
+                .Set<TEntity>()
+                .AsQueryable()
+                .ProjectTo<TEntity, TDto>(ctx));
+    }
 }
 
 public class QueryType : ObjectType
 {
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
-        descriptor.EfQueryEntity<Person>();
-        descriptor.EfQueryEntity<Project>();
-        descriptor.EfQueryEntity<Person>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
-        descriptor.EfQueryEntity<Project>(middlewareFlags: MiddlewareFlags.All & ~MiddlewareFlags.Paging);
+        descriptor
+            .Field("test")
+            .Type<NonNullType<ListType<NonNullType<ObjectType<GraphQlPersonDto>>>>>()
+            .UseDbContext<ApplicationDbContext>()
+            // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
+            .UseProjection()
+            .UseFiltering()
+            .UseSorting()
+            .Resolve(ctx => ctx
+                .DbContext<ApplicationDbContext>()
+                .Set<Person>()
+                .AsQueryable()
+                .ProjectTo<Person, GraphQlPersonDto>(ctx));
+    }
+}
+
+public class ProjectDtoType : ObjectType<GraphQlProjectDto>
+{
+    protected override void Configure(IObjectTypeDescriptor<GraphQlProjectDto> descriptor)
+    {
+        descriptor.BindFieldsImplicitly();
+        // descriptor.Ignore(x => x.Name);
     }
 }
 
