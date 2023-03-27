@@ -88,30 +88,11 @@ public class MapperProfile : Profile
     
     public MapperProfile()
     {
-        CreateNonNullableToDefaultMap<int>();
-        CreateNonNullableToDefaultMap<long>();
-        
-        CreateMap<PersonRequestDto, Person>(MemberList.Source)
-            .UnmapAllNulls();
-        CreateMap<PersonProjectRequestDto, Project>(MemberList.Source)
-            .UnmapAllNulls();
-        
-        CreateMap<Person, PersonResponseDto>(MemberList.Destination);
-        CreateMap<Project, PersonProjectResponseDto>(MemberList.Destination);
-        
-        CreateMap<ProjectRequestDto, Project>(MemberList.Source)
-            .UnmapAllNulls();
-        CreateMap<Project, ProjectResponseDto>(MemberList.Destination);
-        
-        CreateMap<Project, NameDto>(MemberList.Destination)
-            .ForMember(d => d.Name, o => o.MapFrom(s => s.ProjectName))
-            .ReverseMap();
-
         {
             CreateMap<GraphQlPersonDto, Person>(MemberList.Source)
                 .ForMember(d => d.Projects, o => o.MapFrom(s => s.Projets))
                 .ReverseMap()
-                // .ForAllMembers(opt => opt.ExplicitExpansion())
+                .ForAllMembers(opt => opt.ExplicitExpansion())
                 ;
         }
         {
