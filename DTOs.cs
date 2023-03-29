@@ -11,6 +11,7 @@ public class PersonRequestDto
     public ID? Id { get; set; }
     public string Name { get; set; }
     public List<PersonProjectRequestDto> Projects { get; set; } = new();
+    
 }
 
 public class PersonProjectRequestDto
@@ -58,6 +59,8 @@ public class GraphQlPersonDto
     
     // Note: intentionally misspelt
     public List<GraphQlProjectDto> Projets { get; set; } = new();
+    public List<GraphQlPersonDto> Children { get; set; } = new();
+    public GraphQlPersonDto? Parent { get; set; }
 }
 
 public class GraphQlProjectDto
@@ -89,12 +92,21 @@ public class MapperProfile : Profile
     public MapperProfile()
     {
         {
-            CreateMap<GraphQlPersonDto, Person>(MemberList.Source)
-                .ForMember(d => d.Projects, o => o.MapFrom(s => s.Projets))
-                .ReverseMap()
-                .ForAllMembers(opt => opt.ExplicitExpansion())
-                ;
+            var map = CreateMap<GraphQlPersonDto, Person>(MemberList.Source);
+            
+            // map.ForMember(d => d.ParentId, o => o.MapFrom(s => s.Parent!.Id));
+            map.ForMember(d => d.Projects, o => o.MapFrom(s => s.Projets));
+            
+            // map.ForAllMembers(m => m.ExplicitExpansion());
+            
+            var reverseMap = CreateMap<Person, GraphQlPersonDto>(MemberList.Destination);
+            
+            // reverseMap.ForPath(d => d.Parent!.Id, o => o.MapFrom(s => s.ParentId));
+            reverseMap.ForMember(d => d.Projets, o => o.MapFrom(s => s.Projects));
+            
+            reverseMap.ForAllMembers(m => m.ExplicitExpansion());
         }
+
         {
             CreateMap<GraphQlProjectDto, Project>(MemberList.Source)
                 .ForMember(d => d.ProjectName, o => o.MapFrom(s => s.Name))

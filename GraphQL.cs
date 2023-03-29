@@ -140,6 +140,19 @@ public class QueryType : ObjectType
                 .Set<Person>()
                 .AsQueryable()
                 .ProjectTo<Person, GraphQlPersonDto>(ctx));
+        
+        descriptor
+            .Field("test2")
+            .Type<NonNullType<ListType<NonNullType<ObjectType<Person>>>>>()
+            .UseDbContext<ApplicationDbContext>()
+            // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
+            .UseProjection()
+            .UseFiltering()
+            .UseSorting()
+            .Resolve(ctx => ctx
+                .DbContext<ApplicationDbContext>()
+                .Set<Person>()
+                .AsQueryable());
     }
 }
 
@@ -165,54 +178,54 @@ public class EfObjectType<T> : ObjectType<T>
     protected override void Configure(IObjectTypeDescriptor<T> descriptor)
     {
         descriptor.BindFieldsImplicitly();
-        
-        using var dbContext = _dbContextFactory.CreateDbContext();
-        var model = dbContext.Model;
-
-        IObjectFieldDescriptor CreateKeyField(IReadOnlyList<IProperty> props, Type targetEntityType)
-        {
-            if (props.Count > 1)
-                throw new NotImplementedException();
-
-            var prop = props[0];
-            var pointingAtEntity = targetEntityType;
-            return descriptor.Field(prop.PropertyInfo!).ID(pointingAtEntity.Name);
-        }
-
-        var entityModel = model.FindEntityType(typeof(T))!;
-
-        {
-            var key = entityModel.GetKeys().Single(k => k.IsPrimaryKey());
-            var props = key.Properties;
-            if (props.Count > 1)
-                throw new NotImplementedException();
-            
-            var prop = props[0];
-            descriptor
-                .Field(prop.PropertyInfo!)
-                .ID(typeof(T).Name);
-
-            // Nodes won't work with ef core
-            // https://github.com/ChilliCream/graphql-platform/issues/5966
-            // descriptor
-            //     .ImplementsNode()
-            //     .IdField(prop.PropertyInfo!)
-            //     .ResolveNode(async (ctx, id) =>
-            //     {
-            //         return ctx.DbContext<ApplicationDbContext>().Set<T>();
-            //     });
-        }
-
-        foreach (var key in entityModel.GetForeignKeys())
-        {
-            var props = key.Properties;
-            if (props.Count > 1)
-                continue;
-
-            var prop = props[0];
-            descriptor
-                .Field(prop.PropertyInfo!)
-                .ID(key.PrincipalEntityType.Name);
-        }
+        //
+        // using var dbContext = _dbContextFactory.CreateDbContext();
+        // var model = dbContext.Model;
+        //
+        // IObjectFieldDescriptor CreateKeyField(IReadOnlyList<IProperty> props, Type targetEntityType)
+        // {
+        //     if (props.Count > 1)
+        //         throw new NotImplementedException();
+        //
+        //     var prop = props[0];
+        //     var pointingAtEntity = targetEntityType;
+        //     return descriptor.Field(prop.PropertyInfo!).ID(pointingAtEntity.Name);
+        // }
+        //
+        // var entityModel = model.FindEntityType(typeof(T))!;
+        //
+        // {
+        //     var key = entityModel.GetKeys().Single(k => k.IsPrimaryKey());
+        //     var props = key.Properties;
+        //     if (props.Count > 1)
+        //         throw new NotImplementedException();
+        //     
+        //     var prop = props[0];
+        //     descriptor
+        //         .Field(prop.PropertyInfo!)
+        //         .ID(typeof(T).Name);
+        //
+        //     // Nodes won't work with ef core
+        //     // https://github.com/ChilliCream/graphql-platform/issues/5966
+        //     // descriptor
+        //     //     .ImplementsNode()
+        //     //     .IdField(prop.PropertyInfo!)
+        //     //     .ResolveNode(async (ctx, id) =>
+        //     //     {
+        //     //         return ctx.DbContext<ApplicationDbContext>().Set<T>();
+        //     //     });
+        // }
+        //
+        // foreach (var key in entityModel.GetForeignKeys())
+        // {
+        //     var props = key.Properties;
+        //     if (props.Count > 1)
+        //         continue;
+        //
+        //     var prop = props[0];
+        //     descriptor
+        //         .Field(prop.PropertyInfo!)
+        //         .ID(key.PrincipalEntityType.Name);
+        // }
     }
 }
