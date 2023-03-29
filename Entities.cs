@@ -9,6 +9,10 @@ public class Person : IName
     public long Id { get; set; }
     public string Name { get; set; }
     public List<Project> Projects { get; set; } = new();
+    
+    public long? ParentId { get; set; }
+    public Person? Parent { get; set; }
+    public List<Person> Children { get; set; } = new();
 }
 
 public class Project : IName
@@ -40,6 +44,11 @@ public sealed class ApplicationDbContext : DbContext
         modelBuilder.Entity<Person>()
             .HasMany(p => p.Projects)
             .WithOne(p => p.Person);
+
+        modelBuilder.Entity<Person>()
+            .HasOne(p => p.Parent)
+            .WithMany(p => p.Children)
+            .HasForeignKey(p => p.ParentId);
     }
 }
 
