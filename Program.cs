@@ -6,8 +6,7 @@ builder.Services.AddEndpointsApiExplorer();
     var graph = builder.Services.AddGraphQLServer();
     graph.InitializeOnStartup();
     graph.AddQueryType<QueryType>();
-    graph.AddType<StatusType>();
-    graph.AddType<Thing>();
+    graph.AddType<HumanType>();
     graph.ModifyOptions(o =>
     {
         o.DefaultBindingBehavior = BindingBehavior.Explicit;

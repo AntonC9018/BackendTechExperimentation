@@ -1,24 +1,21 @@
 ﻿namespace efcore_transactions;
 
-public enum Статус
+public class Человек
 {
-    Активный,
-    Завершенный,
+    public int Идно { get; set; }
+    public string Имя { get; set; }
+    public string Фамилия { get; set; }
 }
 
-public class StatusType : EnumType<Статус>
+public class HumanType : ObjectType<Человек>
 {
-    protected override void Configure(IEnumTypeDescriptor<Статус> descriptor)
+    protected override void Configure(IObjectTypeDescriptor<Человек> descriptor)
     {
-        descriptor.Name("Status");
-        descriptor.Value(Статус.Активный).Name("ACTIVE");
-        descriptor.Value(Статус.Завершенный).Name("COMPLETED");
+        descriptor.Name("Human");
+        descriptor.Field(x => x.Идно).Name("id");
+        descriptor.Field(x => x.Имя).Name("name");
+        descriptor.Field(x => x.Фамилия).Name("surname");
     }
-}
-
-public class Thing
-{
-    public Статус Status { get; set; }
 }
 
 public class QueryType : ObjectType
@@ -27,6 +24,20 @@ public class QueryType : ObjectType
     {
         descriptor
             .Field("test")
-            .Resolve(ctx => new Thing { Status = Статус.Активный });
+            .Resolve(ctx => new[]
+            {
+                new Человек
+                {
+                    Идно = 1,
+                    Имя = "Иван",
+                    Фамилия = "Иванов"
+                },
+                new Человек
+                {
+                    Идно = 2,
+                    Имя = "Петр",
+                    Фамилия = "Петров"
+                },
+            });
     }
 }
