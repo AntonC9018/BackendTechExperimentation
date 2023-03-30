@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-using AutoMapper;
 using efcore_transactions;
 using HotChocolate.Execution.Processing;
 using Microsoft.EntityFrameworkCore;
@@ -14,16 +12,6 @@ void ConfigureDbContext(DbContextOptionsBuilder c)
 }
 
 builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(ConfigureDbContext);
-builder.Services.AddAutoMapper(c =>
-{
-    c.AddProfile<MapperProfile>();
-    
-    var config = new MapperConfiguration(configuration =>
-    {
-        configuration.AddProfile<MapperProfile>();
-    });
-    config.AssertConfigurationIsValid();
-});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 {

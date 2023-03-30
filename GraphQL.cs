@@ -1,9 +1,4 @@
-﻿using System.Reflection;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-
-namespace efcore_transactions;
+﻿namespace efcore_transactions;
 
 [Flags]
 public enum MiddlewareFlags
@@ -17,35 +12,6 @@ public enum MiddlewareFlags
 
 public static class GraphQlHelper
 {
-    public static IObjectFieldDescriptor EfQueryEntity<TEntity>(
-        this IObjectTypeDescriptor descriptor,
-        string? name = null,
-        MiddlewareFlags middlewareFlags = MiddlewareFlags.All)
-    
-        where TEntity : class
-    {
-        return EfQuery<TEntity, EfObjectType<TEntity>>(descriptor, name, middlewareFlags);
-    }
-    
-    public static IObjectFieldDescriptor EfQueryType<TQuery>(
-        this IObjectTypeDescriptor descriptor,
-        string? name = null,
-        MiddlewareFlags middlewareFlags = MiddlewareFlags.All)
-    
-        where TQuery : ObjectType
-    {
-        // Pain point #1
-        var objectTypeType = typeof(TQuery);
-        while (!objectTypeType.IsGenericType)
-            objectTypeType = objectTypeType.BaseType!;
-        var entityType = objectTypeType.GetGenericArguments()[0];
-        
-        return (IObjectFieldDescriptor) typeof(GraphQlHelper)
-            .GetMethod("EfQuery", BindingFlags.Public | BindingFlags.Static)!
-            .MakeGenericMethod(entityType, typeof(TQuery))
-            .Invoke(null, new object?[] { descriptor, name, middlewareFlags })!;
-    }
-    
     public static IObjectFieldDescriptor EfQuery<TEntity, TQuery>(
         this IObjectTypeDescriptor descriptor,
         string? name = null,
@@ -98,29 +64,6 @@ public static class GraphQlHelper
 
         return f;
     }
-    
-    
-    public static IObjectFieldDescriptor EfQueryDto<TEntity, TDto, TQuery>(
-        this IObjectTypeDescriptor descriptor)
-    
-        where TEntity : class
-        where TDto : class
-        where TQuery : ObjectType<TDto>
-    {
-        return descriptor
-            .Field("test")
-            .Type<NonNullType<ListType<NonNullType<TQuery>>>>()
-            .UseDbContext<ApplicationDbContext>()
-            .UsePaging<NonNullType<TQuery>>()
-            .UseProjection()
-            .UseFiltering()
-            .UseSorting()
-            .Resolve(ctx => ctx
-                .DbContext<ApplicationDbContext>()
-                .Set<TEntity>()
-                .AsQueryable()
-                .ProjectTo<TEntity, TDto>(ctx));
-    }
 }
 
 public class QueryType : ObjectType
@@ -129,20 +72,6 @@ public class QueryType : ObjectType
     {
         descriptor
             .Field("test")
-            .Type<NonNullType<ListType<NonNullType<ObjectType<GraphQlPersonDto>>>>>()
-            .UseDbContext<ApplicationDbContext>()
-            // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
-            .UseProjection()
-            .UseFiltering()
-            .UseSorting()
-            .Resolve(ctx => ctx
-                .DbContext<ApplicationDbContext>()
-                .Set<Person>()
-                .AsQueryable()
-                .ProjectTo<Person, GraphQlPersonDto>(ctx));
-        
-        descriptor
-            .Field("test2")
             .Type<NonNullType<ListType<NonNullType<ObjectType<Person>>>>>()
             .UseDbContext<ApplicationDbContext>()
             // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
@@ -153,79 +82,5 @@ public class QueryType : ObjectType
                 .DbContext<ApplicationDbContext>()
                 .Set<Person>()
                 .AsQueryable());
-    }
-}
-
-public class ProjectDtoType : ObjectType<GraphQlProjectDto>
-{
-    protected override void Configure(IObjectTypeDescriptor<GraphQlProjectDto> descriptor)
-    {
-        descriptor.BindFieldsImplicitly();
-        // descriptor.Ignore(x => x.Name);
-    }
-}
-
-public class EfObjectType<T> : ObjectType<T>
-    where T : class
-{
-    protected readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    
-    public EfObjectType(IDbContextFactory<ApplicationDbContext> dbContextFactory)
-    {
-        _dbContextFactory = dbContextFactory;
-    }
-    
-    protected override void Configure(IObjectTypeDescriptor<T> descriptor)
-    {
-        descriptor.BindFieldsImplicitly();
-        //
-        // using var dbContext = _dbContextFactory.CreateDbContext();
-        // var model = dbContext.Model;
-        //
-        // IObjectFieldDescriptor CreateKeyField(IReadOnlyList<IProperty> props, Type targetEntityType)
-        // {
-        //     if (props.Count > 1)
-        //         throw new NotImplementedException();
-        //
-        //     var prop = props[0];
-        //     var pointingAtEntity = targetEntityType;
-        //     return descriptor.Field(prop.PropertyInfo!).ID(pointingAtEntity.Name);
-        // }
-        //
-        // var entityModel = model.FindEntityType(typeof(T))!;
-        //
-        // {
-        //     var key = entityModel.GetKeys().Single(k => k.IsPrimaryKey());
-        //     var props = key.Properties;
-        //     if (props.Count > 1)
-        //         throw new NotImplementedException();
-        //     
-        //     var prop = props[0];
-        //     descriptor
-        //         .Field(prop.PropertyInfo!)
-        //         .ID(typeof(T).Name);
-        //
-        //     // Nodes won't work with ef core
-        //     // https://github.com/ChilliCream/graphql-platform/issues/5966
-        //     // descriptor
-        //     //     .ImplementsNode()
-        //     //     .IdField(prop.PropertyInfo!)
-        //     //     .ResolveNode(async (ctx, id) =>
-        //     //     {
-        //     //         return ctx.DbContext<ApplicationDbContext>().Set<T>();
-        //     //     });
-        // }
-        //
-        // foreach (var key in entityModel.GetForeignKeys())
-        // {
-        //     var props = key.Properties;
-        //     if (props.Count > 1)
-        //         continue;
-        //
-        //     var prop = props[0];
-        //     descriptor
-        //         .Field(prop.PropertyInfo!)
-        //         .ID(key.PrincipalEntityType.Name);
-        // }
     }
 }

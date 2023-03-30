@@ -4,7 +4,7 @@ namespace efcore_transactions;
 
 #pragma warning disable CS8618
 
-public class Person : IName
+public class Person
 {
     public long Id { get; set; }
     public string Name { get; set; }
@@ -15,19 +15,12 @@ public class Person : IName
     public List<Person> Children { get; set; } = new();
 }
 
-public class Project : IName
+public class Project
 {
     public long Id { get; set; }
     public long PersonId { get; set; }
     public Person Person { get; set; }
     public string ProjectName { get; set; }
-    
-    string IName.Name => ProjectName;
-}
-
-public interface IName
-{
-    string Name { get; }
 }
 
 public sealed class ApplicationDbContext : DbContext
