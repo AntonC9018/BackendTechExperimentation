@@ -1,4 +1,7 @@
-﻿namespace efcore_transactions;
+﻿using HotChocolate.Language;
+using HotChocolate.Language.Visitors;
+
+namespace efcore_transactions;
 
 [Flags]
 public enum MiddlewareFlags

@@ -1,5 +1,4 @@
 using efcore_transactions;
-using HotChocolate.Execution.Processing;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,12 +21,6 @@ builder.Services.AddEndpointsApiExplorer();
     graph.AddFiltering();
     graph.AddSorting();
     graph.InitializeOnStartup();
-    graph.AddTransactionScopeHandler<DefaultTransactionScopeHandler>();
-    graph.AddMutationConventions(applyToAllMutations: true);
-    // graph.AddGlobalObjectIdentification();
-    // graph.AddDirectiveType<MyDirectiveType>();
-    // graph.ModifyOptions(opt => opt.UseXmlDocumentation = true);
-    // graph.AddType<ProjectDtoType>();
 }
 
 var app = builder.Build();
