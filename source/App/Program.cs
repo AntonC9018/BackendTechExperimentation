@@ -1,4 +1,5 @@
 using efcore_transactions;
+using HotChocolate.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,15 @@ builder.Services.AddEndpointsApiExplorer();
     graph.AddGraphQLServer();
     graph.AddQueryType<QueryType>();
     graph.AddProjections();
-    graph.AddFiltering();
+    graph.AddFiltering(o =>
+    {
+        o.AddDefaultOperations();
+        o.BindDefaultTypes();
+        o.Provider(new CustomQueryFilterProvider(x =>
+        {
+            x.AddDefaultFieldHandlers();
+        }));
+    });
     graph.AddSorting();
     graph.InitializeOnStartup();
 }

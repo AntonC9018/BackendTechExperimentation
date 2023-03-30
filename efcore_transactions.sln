@@ -1,5 +1,57 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "efcore_transactions", "source\App\efcore_transactions.csproj", "{94732EE2-402C-4627-BAFC-850537C0D2C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "efcore_transactions", "source\App\efcore_transactions.csproj", "{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GreenDonut", "submodules\graphql-platform\src\GreenDonut\src\Core\GreenDonut.csproj", "{C3376DC4-BC42-4605-B7FE-370AD023370D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.AspNetCore", "submodules\graphql-platform\src\HotChocolate\AspNetCore\src\AspNetCore\HotChocolate.AspNetCore.csproj", "{0C82A7C3-B17D-4B1C-9265-577C18C68683}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Transport.Sockets", "submodules\graphql-platform\src\HotChocolate\AspNetCore\src\Transport.Sockets\HotChocolate.Transport.Sockets.csproj", "{FF2FB79F-1CAE-455B-A32A-71C7F3B21903}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Abstractions", "submodules\graphql-platform\src\HotChocolate\Core\src\Abstractions\HotChocolate.Abstractions.csproj", "{C41BDAF7-F9BB-4CBC-A99D-640D14A65896}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Authorization", "submodules\graphql-platform\src\HotChocolate\Core\src\Authorization\HotChocolate.Authorization.csproj", "{F00C7380-278D-4AFD-863F-4690A9834BEB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Core", "submodules\graphql-platform\src\HotChocolate\Core\src\Core\HotChocolate.Core.csproj", "{67D093F6-5217-4FDE-9E13-7018E8393280}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Execution.Abstractions", "submodules\graphql-platform\src\HotChocolate\Core\src\Execution.Abstractions\HotChocolate.Execution.Abstractions.csproj", "{FC755B84-E6AC-4200-8364-2B36AE04FCE8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Execution", "submodules\graphql-platform\src\HotChocolate\Core\src\Execution\HotChocolate.Execution.csproj", "{C70105A8-FDAC-46DD-804B-13EFECC89561}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Fetching", "submodules\graphql-platform\src\HotChocolate\Core\src\Fetching\HotChocolate.Fetching.csproj", "{EFB6C550-1986-4D85-A071-B987895B53C1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Subscriptions.InMemory", "submodules\graphql-platform\src\HotChocolate\Core\src\Subscriptions.InMemory\HotChocolate.Subscriptions.InMemory.csproj", "{08235267-DB65-4AC8-8D79-56529A13CFBC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Subscriptions", "submodules\graphql-platform\src\HotChocolate\Core\src\Subscriptions\HotChocolate.Subscriptions.csproj", "{E41149A5-CA1D-406B-B988-9F6ECBBF3562}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Types.CursorPagination", "submodules\graphql-platform\src\HotChocolate\Core\src\Types.CursorPagination\HotChocolate.Types.CursorPagination.csproj", "{8A3F17F4-5B66-4B80-8193-872410941C29}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Types.Mutations", "submodules\graphql-platform\src\HotChocolate\Core\src\Types.Mutations\HotChocolate.Types.Mutations.csproj", "{CBB45E90-8AF8-441F-8EBD-7FF65DEF28D9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Types.OffsetPagination", "submodules\graphql-platform\src\HotChocolate\Core\src\Types.OffsetPagination\HotChocolate.Types.OffsetPagination.csproj", "{69E96602-21CF-4045-A52F-03E50736E0B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Types.Scalars.Upload", "submodules\graphql-platform\src\HotChocolate\Core\src\Types.Scalars.Upload\HotChocolate.Types.Scalars.Upload.csproj", "{6CB44AF4-331A-499D-8F89-B9C4126F1444}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Types", "submodules\graphql-platform\src\HotChocolate\Core\src\Types\HotChocolate.Types.csproj", "{F71EF75E-8671-4B14-A05C-380113D3D227}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Validation", "submodules\graphql-platform\src\HotChocolate\Core\src\Validation\HotChocolate.Validation.csproj", "{1C0031E2-D890-416A-935D-94B1081808B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Data", "submodules\graphql-platform\src\HotChocolate\Data\src\Data\HotChocolate.Data.csproj", "{2DF98F62-5EC6-4163-AB9E-39D04B8FDA46}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Data.EntityFramework", "submodules\graphql-platform\src\HotChocolate\Data\src\EntityFramework\HotChocolate.Data.EntityFramework.csproj", "{1E2BD92F-52DF-409F-ADAF-3880BD35A0AE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Language.SyntaxTree", "submodules\graphql-platform\src\HotChocolate\Language\src\Language.SyntaxTree\HotChocolate.Language.SyntaxTree.csproj", "{81FD8E20-D71C-4708-9840-0904F048569B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Language.Utf8", "submodules\graphql-platform\src\HotChocolate\Language\src\Language.Utf8\HotChocolate.Language.Utf8.csproj", "{52B60535-FA21-4130-8BF1-4DC870077935}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Language.Visitors", "submodules\graphql-platform\src\HotChocolate\Language\src\Language.Visitors\HotChocolate.Language.Visitors.csproj", "{B31CAC96-9B19-438D-B320-7F7DAED2E3BC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Language.Web", "submodules\graphql-platform\src\HotChocolate\Language\src\Language.Web\HotChocolate.Language.Web.csproj", "{A72673D2-AC4C-4D20-913B-6845D62B2858}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Language", "submodules\graphql-platform\src\HotChocolate\Language\src\Language\HotChocolate.Language.csproj", "{EC7460A8-A9A7-4CB5-9EBF-A41FE02D15F0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Utilities.Introspection", "submodules\graphql-platform\src\HotChocolate\Utilities\src\Utilities.Introspection\HotChocolate.Utilities.Introspection.csproj", "{4E7A2EA8-ECD4-42A6-B5B8-DCCEE25C18B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Utilities", "submodules\graphql-platform\src\HotChocolate\Utilities\src\Utilities\HotChocolate.Utilities.csproj", "{DB0E64E7-C7D3-4F80-BAAA-8C94DAB75293}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -7,15 +59,119 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{94732EE2-402C-4627-BAFC-850537C0D2C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{94732EE2-402C-4627-BAFC-850537C0D2C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{94732EE2-402C-4627-BAFC-850537C0D2C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{94732EE2-402C-4627-BAFC-850537C0D2C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF2FB79F-1CAE-455B-A32A-71C7F3B21903}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF2FB79F-1CAE-455B-A32A-71C7F3B21903}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF2FB79F-1CAE-455B-A32A-71C7F3B21903}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF2FB79F-1CAE-455B-A32A-71C7F3B21903}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C41BDAF7-F9BB-4CBC-A99D-640D14A65896}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C41BDAF7-F9BB-4CBC-A99D-640D14A65896}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C41BDAF7-F9BB-4CBC-A99D-640D14A65896}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C41BDAF7-F9BB-4CBC-A99D-640D14A65896}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F00C7380-278D-4AFD-863F-4690A9834BEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F00C7380-278D-4AFD-863F-4690A9834BEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F00C7380-278D-4AFD-863F-4690A9834BEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F00C7380-278D-4AFD-863F-4690A9834BEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67D093F6-5217-4FDE-9E13-7018E8393280}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67D093F6-5217-4FDE-9E13-7018E8393280}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67D093F6-5217-4FDE-9E13-7018E8393280}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67D093F6-5217-4FDE-9E13-7018E8393280}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC755B84-E6AC-4200-8364-2B36AE04FCE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC755B84-E6AC-4200-8364-2B36AE04FCE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC755B84-E6AC-4200-8364-2B36AE04FCE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC755B84-E6AC-4200-8364-2B36AE04FCE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C70105A8-FDAC-46DD-804B-13EFECC89561}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C70105A8-FDAC-46DD-804B-13EFECC89561}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C70105A8-FDAC-46DD-804B-13EFECC89561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C70105A8-FDAC-46DD-804B-13EFECC89561}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFB6C550-1986-4D85-A071-B987895B53C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFB6C550-1986-4D85-A071-B987895B53C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFB6C550-1986-4D85-A071-B987895B53C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFB6C550-1986-4D85-A071-B987895B53C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08235267-DB65-4AC8-8D79-56529A13CFBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08235267-DB65-4AC8-8D79-56529A13CFBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08235267-DB65-4AC8-8D79-56529A13CFBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08235267-DB65-4AC8-8D79-56529A13CFBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E41149A5-CA1D-406B-B988-9F6ECBBF3562}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E41149A5-CA1D-406B-B988-9F6ECBBF3562}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E41149A5-CA1D-406B-B988-9F6ECBBF3562}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E41149A5-CA1D-406B-B988-9F6ECBBF3562}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A3F17F4-5B66-4B80-8193-872410941C29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A3F17F4-5B66-4B80-8193-872410941C29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A3F17F4-5B66-4B80-8193-872410941C29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A3F17F4-5B66-4B80-8193-872410941C29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBB45E90-8AF8-441F-8EBD-7FF65DEF28D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBB45E90-8AF8-441F-8EBD-7FF65DEF28D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBB45E90-8AF8-441F-8EBD-7FF65DEF28D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBB45E90-8AF8-441F-8EBD-7FF65DEF28D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69E96602-21CF-4045-A52F-03E50736E0B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69E96602-21CF-4045-A52F-03E50736E0B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69E96602-21CF-4045-A52F-03E50736E0B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69E96602-21CF-4045-A52F-03E50736E0B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CB44AF4-331A-499D-8F89-B9C4126F1444}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CB44AF4-331A-499D-8F89-B9C4126F1444}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CB44AF4-331A-499D-8F89-B9C4126F1444}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CB44AF4-331A-499D-8F89-B9C4126F1444}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F71EF75E-8671-4B14-A05C-380113D3D227}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F71EF75E-8671-4B14-A05C-380113D3D227}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F71EF75E-8671-4B14-A05C-380113D3D227}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F71EF75E-8671-4B14-A05C-380113D3D227}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C0031E2-D890-416A-935D-94B1081808B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C0031E2-D890-416A-935D-94B1081808B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C0031E2-D890-416A-935D-94B1081808B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C0031E2-D890-416A-935D-94B1081808B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DF98F62-5EC6-4163-AB9E-39D04B8FDA46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DF98F62-5EC6-4163-AB9E-39D04B8FDA46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DF98F62-5EC6-4163-AB9E-39D04B8FDA46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DF98F62-5EC6-4163-AB9E-39D04B8FDA46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E2BD92F-52DF-409F-ADAF-3880BD35A0AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E2BD92F-52DF-409F-ADAF-3880BD35A0AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E2BD92F-52DF-409F-ADAF-3880BD35A0AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E2BD92F-52DF-409F-ADAF-3880BD35A0AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81FD8E20-D71C-4708-9840-0904F048569B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81FD8E20-D71C-4708-9840-0904F048569B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81FD8E20-D71C-4708-9840-0904F048569B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81FD8E20-D71C-4708-9840-0904F048569B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52B60535-FA21-4130-8BF1-4DC870077935}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52B60535-FA21-4130-8BF1-4DC870077935}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52B60535-FA21-4130-8BF1-4DC870077935}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52B60535-FA21-4130-8BF1-4DC870077935}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B31CAC96-9B19-438D-B320-7F7DAED2E3BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B31CAC96-9B19-438D-B320-7F7DAED2E3BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B31CAC96-9B19-438D-B320-7F7DAED2E3BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B31CAC96-9B19-438D-B320-7F7DAED2E3BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A72673D2-AC4C-4D20-913B-6845D62B2858}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A72673D2-AC4C-4D20-913B-6845D62B2858}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A72673D2-AC4C-4D20-913B-6845D62B2858}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A72673D2-AC4C-4D20-913B-6845D62B2858}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC7460A8-A9A7-4CB5-9EBF-A41FE02D15F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC7460A8-A9A7-4CB5-9EBF-A41FE02D15F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC7460A8-A9A7-4CB5-9EBF-A41FE02D15F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC7460A8-A9A7-4CB5-9EBF-A41FE02D15F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E7A2EA8-ECD4-42A6-B5B8-DCCEE25C18B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E7A2EA8-ECD4-42A6-B5B8-DCCEE25C18B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E7A2EA8-ECD4-42A6-B5B8-DCCEE25C18B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E7A2EA8-ECD4-42A6-B5B8-DCCEE25C18B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB0E64E7-C7D3-4F80-BAAA-8C94DAB75293}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB0E64E7-C7D3-4F80-BAAA-8C94DAB75293}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB0E64E7-C7D3-4F80-BAAA-8C94DAB75293}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB0E64E7-C7D3-4F80-BAAA-8C94DAB75293}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {5212F200-43C1-435F-9293-50BC0366801A}
+		SolutionGuid = {1CCC5E40-8042-4528-B0EB-0C14C460F274}
 	EndGlobalSection
 EndGlobal
