@@ -21,12 +21,7 @@ builder.Services.AddEndpointsApiExplorer();
     graph.AddProjections();
     graph.AddFiltering(o =>
     {
-        o.AddDefaultOperations();
-        o.BindDefaultTypes();
-        o.Provider(new CustomQueryFilterProvider(x =>
-        {
-            x.AddDefaultFieldHandlers();
-        }));
+        o.AddDefaults();
     });
     graph.AddSorting();
     graph.InitializeOnStartup();
