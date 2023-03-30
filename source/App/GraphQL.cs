@@ -78,6 +78,7 @@ public class QueryType : ObjectType
             .Type<NonNullType<ListType<NonNullType<ObjectType<Person>>>>>()
             .UseDbContext<ApplicationDbContext>()
             // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
+            .Use<WhereMiddleware>()
             .UseProjection()
             .UseFiltering()
             .UseSorting()
