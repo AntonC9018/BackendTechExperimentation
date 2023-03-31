@@ -37,6 +37,9 @@ public class WhereMiddleware
         FieldDelegate next,
         WhereContext where)
     {
+        _ = next ?? throw new ArgumentNullException(nameof(next));
+        _ = where ?? throw new ArgumentNullException(nameof(where));
+        
         _next = next;
         _where = where;
     }

@@ -1,5 +1,6 @@
 ﻿using HotChocolate.Data;
 using HotChocolate.Types;
+using Microsoft.EntityFrameworkCore;
 
 namespace efcore_transactions;
 
@@ -78,13 +79,14 @@ public class QueryType : ObjectType
             .Type<NonNullType<ListType<NonNullType<ObjectType<Person>>>>>()
             .UseDbContext<ApplicationDbContext>()
             // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
-            .Use<WhereMiddleware>()
+            // .Use<WhereMiddleware>()
             .UseProjection()
             .UseFiltering()
             .UseSorting()
             .Resolve(ctx => ctx
                 .DbContext<ApplicationDbContext>()
                 .Set<Person>()
-                .AsQueryable());
+                .AsQueryable()
+                .AsNoTracking());
     }
 }
