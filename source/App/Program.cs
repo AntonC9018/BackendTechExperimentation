@@ -40,23 +40,19 @@ app.Map("test", async (IDbContextFactory<ApplicationDbContext> factory) =>
     using var context = factory.CreateDbContext();
     
     var q = context.People.AsQueryable();
-
-    q = q.Include(
-        p => p.Projects
-            .Where(
-                pr => pr.ProjectName
-                    .Contains(" ")));
-    
     var q2 = q.Select(p => new
     {
-        Projects = p.Projects.Where(
-            pr => pr.ProjectName
-                .Contains(" ")),
+        p.Projects,
         p.Id,
     });
-    
-    var list = await q2.ToListAsync();
 
+    var sql = q2.ToQueryString();
+    // sql = sql.Replace(" [Projects] ", " [view] ");
+    // sql = "WITH [view] AS (SELECT * FROM [Projects] AS [x] WHERE [x].[ProjectName] LIKE '% %')\n" + sql;
+
+
+    var list = await q2.ToListAsync();
+    
     return list;
 });
 
