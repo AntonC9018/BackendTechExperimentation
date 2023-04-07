@@ -37,23 +37,14 @@ public class RelationProjectionInterceptor : IProjectionFieldInterceptor<Queryab
         var fieldDefinition = field.ResolverMember;
         var instance = context.PopInstance();
 
-        if (fieldDefinition is null)
-        {
-            var lambdaBody = filterExpression.Body;
-            var parameterToReplace = filterExpression.Parameters[0];
-            var parameterSubstitute = context.
-        }
+        var nextInstance = ReplaceVariableExpressionVisitor
+            .ReplaceParameter(filterExpression, filterExpression.Parameters[0], instance);
         
-        context.PushInstance(instance);
+        context.PushInstance(nextInstance);
     }
 
     public void AfterProjection(QueryableProjectionContext context, ISelection selection)
     {
-    }
-
-    private sealed class GetMostNestedMemberAccessOnParameterExpressionVisitor : ExpressionVisitor
-    {
-        private MemberExpression? _result;
     }
     
     private sealed class ReplaceVariableExpressionVisitor : ExpressionVisitor
@@ -73,14 +64,17 @@ public class RelationProjectionInterceptor : IProjectionFieldInterceptor<Queryab
         {
             if (node == _parameter)
                 return _replacement;
+
             return base.VisitParameter(node);
         }
 
-        public static LambdaExpression ReplaceParameter(
-            Expression currentProjection,
-            Expression filter)
+        public static Expression ReplaceParameter(
+            LambdaExpression lambda,
+            ParameterExpression parameter,
+            Expression replacement)
         {
-            return null;
+            var visitor = new ReplaceVariableExpressionVisitor(replacement, parameter);
+            return visitor.Visit(lambda.Body);
         }
     }
 }

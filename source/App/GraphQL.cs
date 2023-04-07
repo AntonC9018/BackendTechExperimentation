@@ -77,7 +77,7 @@ public class PersonType : ObjectType<Person>
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
         descriptor.Field(x => x.Projects)
-            .Relation((Person x) => x.Projects.Where(pr => pr.ProjectName.Contains(" ")));
+            .Relation((IEnumerable<Project> projects) => projects.Where(p => p.ProjectName.Contains(" ")));
     }
 }
 
