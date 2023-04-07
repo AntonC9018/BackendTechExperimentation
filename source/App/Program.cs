@@ -22,7 +22,8 @@ builder.Services.AddEndpointsApiExplorer();
     graph.AddProjections(descriptor =>
     {
         var provider = new QueryableProjectionProvider(x => x
-            .RegisterFieldInterceptor<RelationProjectionInterceptor>()
+            .RegisterFieldInterceptor<RelationProjectionFieldInterceptor>()
+            .RegisterFieldInterceptor<HelloWorldProjectionFieldInterceptor>()
             .AddDefaults());
         descriptor.Provider(provider);
     });
@@ -32,6 +33,8 @@ builder.Services.AddEndpointsApiExplorer();
     });
     graph.AddSorting();
     graph.InitializeOnStartup();
+    graph.AddType<PersonType>();
+    graph.AddType<ProjectType>();
 }
 
 var app = builder.Build();

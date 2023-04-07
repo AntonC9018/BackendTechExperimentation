@@ -76,11 +76,18 @@ public class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
-        descriptor.Field(x => x.Projects)
-            .Relation((IEnumerable<Project> projects) => projects.Where(p => p.ProjectName.Contains(" ")));
+        descriptor.BindFieldsImplicitly();
     }
 }
 
+public class ProjectType : ObjectType<Project>
+{
+    protected override void Configure(IObjectTypeDescriptor<Project> descriptor)
+    {
+        descriptor.GlobalFilter(p => p.ProjectName.Contains(" "));
+        descriptor.Field(x => x.ProjectName);
+    }
+}
 
 public class QueryType : ObjectType
 {
