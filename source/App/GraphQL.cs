@@ -76,7 +76,7 @@ public class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
-        descriptor.GlobalFilter(p => !p.Name.Contains('A'));
+        descriptor.GlobalFilter(p => !p.Name.Contains("A"));
         descriptor.BindFieldsImplicitly();
     }
 }

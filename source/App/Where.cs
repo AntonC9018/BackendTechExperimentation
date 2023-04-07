@@ -78,9 +78,6 @@ public class HelloWorldProjectionFieldInterceptor : IProjectionFieldInterceptor<
     
     private void BeforeProjectionAction(ProjectionSetupArgs a)
     {
-        if (a.Info is not { IsList: true, IsNonNull: true })
-            return;
-        
         var projectionExpression = a.Context.PopInstance();
 
         if (a.Info.IsList)
@@ -99,10 +96,45 @@ public class HelloWorldProjectionFieldInterceptor : IProjectionFieldInterceptor<
         }
         else
         {
-            // x --> a.FilterExpression(x)
+            // x --> a.FilterExpression(x) ? x : null
             var newExpression = ReplaceVariableExpressionVisitor.ReplaceAndGetBody(a.FilterExpression, projectionExpression);
-            a.Context.PushInstance(newExpression);
+            var nullExpression = Expression.Constant(null, projectionExpression.Type);
+            var ternary = Expression.Condition(newExpression, projectionExpression,nullExpression);
+            a.Context.PushInstance(ternary);
         }
+        
+        // Doesn't work right:
+        
+        // query People {
+        //     test {
+        //         parent
+        //         {
+        //             name,
+        //             projects {
+        //                 id,
+        //                 projectName
+        //             }
+        //         }
+        //     }
+        // }
+        
+        // It should add to the null check.
+        // !(_s1.Name.Contains("A")) ? _s1 is also wrong.
+        // DbSet<Person>()
+        //     .AsNoTracking()
+        //     .Select(_s1 => new Person{ Parent = !(_s1.Name.Contains("A")) ? _s1 : null.Parent != null ? new Person{ 
+        //             Name = !(_s1.Name.Contains("A")) ? _s1 : null.Parent.Name, 
+        //             Projects = !(_s1.Name.Contains("A")) ? _s1 : null.Parent.Projects
+        //                 .Where(p => p.ProjectName.Contains(" "))
+        //                 .Select(p2 => new Project{ 
+        //                         Id = p2.Id, 
+        //                         ProjectName = p2.ProjectName 
+        //                     }
+        //                 )
+        //                 .ToList() 
+        //         }
+        //         : default(Person) }
+        //     )
     }
 
     private void AfterProjectionAction(ProjectionSetupArgs a)
