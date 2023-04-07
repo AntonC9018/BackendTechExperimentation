@@ -1,4 +1,5 @@
-﻿using HotChocolate.Data;
+﻿using System.Linq.Expressions;
+using HotChocolate.Data;
 using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 
@@ -70,13 +71,24 @@ public static class GraphQlHelper
     }
 }
 
+
+public class PersonType : ObjectType<Person>
+{
+    protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
+    {
+        descriptor.Field(x => x.Projects)
+            .Relation((Person x) => x.Projects.Where(pr => pr.ProjectName.Contains(" ")));
+    }
+}
+
+
 public class QueryType : ObjectType
 {
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
         descriptor
             .Field("test")
-            .Type<NonNullType<ListType<NonNullType<ObjectType<Person>>>>>()
+            .Type<NonNullType<ListType<NonNullType<PersonType>>>>()
             .UseDbContext<ApplicationDbContext>()
             // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
             // .Use<WhereMiddleware>()

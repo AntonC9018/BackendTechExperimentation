@@ -1,5 +1,6 @@
 using efcore_transactions;
 using HotChocolate.Data;
+using HotChocolate.Data.Projections.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,13 @@ builder.Services.AddEndpointsApiExplorer();
     var graph = builder.Services.AddGraphQLServer();
     graph.AddGraphQLServer();
     graph.AddQueryType<QueryType>();
-    graph.AddProjections();
+    graph.AddProjections(descriptor =>
+    {
+        var provider = new QueryableProjectionProvider(x => x
+            .RegisterFieldInterceptor<RelationProjectionInterceptor>()
+            .AddDefaults());
+        descriptor.Provider(provider);
+    });
     graph.AddFiltering(o =>
     {
         o.AddDefaults();
@@ -28,33 +35,6 @@ builder.Services.AddEndpointsApiExplorer();
 }
 
 var app = builder.Build();
-
-{
-    using var context = app.Services.GetRequiredService<IDbContextFactory<ApplicationDbContext>>()
-        .CreateDbContext();
-    await Seeder.Seed(context);
-}
-
-app.Map("test", async (IDbContextFactory<ApplicationDbContext> factory) =>
-{
-    using var context = factory.CreateDbContext();
-    
-    var q = context.People.AsQueryable();
-    var q2 = q.Select(p => new
-    {
-        p.Projects,
-        p.Id,
-    });
-
-    var sql = q2.ToQueryString();
-    // sql = sql.Replace(" [Projects] ", " [view] ");
-    // sql = "WITH [view] AS (SELECT * FROM [Projects] AS [x] WHERE [x].[ProjectName] LIKE '% %')\n" + sql;
-
-
-    var list = await q2.ToListAsync();
-    
-    return list;
-});
 
 app.MapGraphQL();
 app.MapGraphQLSchema();

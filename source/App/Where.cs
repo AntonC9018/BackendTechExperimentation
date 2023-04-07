@@ -1,92 +1,86 @@
 ﻿using System.Linq.Expressions;
-using HotChocolate.Data.Filters;
-using HotChocolate.Data.Filters.Expressions;
-using HotChocolate.Language;
-using HotChocolate.Language.Visitors;
+using HotChocolate.Data.Projections;
+using HotChocolate.Data.Projections.Expressions;
+using HotChocolate.Data.Projections.Expressions.Handlers;
+using HotChocolate.Execution.Processing;
 using HotChocolate.Types;
 
 namespace efcore_transactions;
 
-public class CustomQueryFilterProvider : QueryableFilterProvider
+public static class RelationProjectionsObjectDescriptorExtensions
 {
-    /// <summary>
-    /// Creates a new instance
-    /// </summary>
-    public CustomQueryFilterProvider()
+    public static IObjectFieldDescriptor Relation<T>(
+        this IObjectFieldDescriptor descriptor,
+        Expression<Func<T, object>> expression)
     {
+        descriptor.Extend().OnBeforeCreate(x => x.ContextData["RelationProjection"] = expression);
+        return descriptor;
+    }
+}
+
+public class RelationProjectionInterceptor : IProjectionFieldInterceptor<QueryableProjectionContext>
+{
+    public bool CanHandle(ISelection selection)
+    {
+        var field = selection.Field;
+        var contextData = field.ContextData;
+        return contextData.ContainsKey("RelationProjection");
     }
 
-    /// <summary>
-    /// Creates a new instance
-    /// </summary>
-    /// <param name="configure">Configures the provider</param>
-    public CustomQueryFilterProvider(
-        Action<IFilterProviderDescriptor<QueryableFilterContext>> configure)
-        : base(configure)
+    public void BeforeProjection(
+        QueryableProjectionContext context,
+        ISelection selection)
     {
-    }
+        var field = selection.Field;
+        var contextData = field.ContextData;
+        var filterExpression = (LambdaExpression) contextData["RelationProjection"]!;
+        var fieldDefinition = field.ResolverMember;
+        var instance = context.PopInstance();
 
-    /// <summary>
-    /// The visitor that is used to visit the input
-    /// </summary>
-    protected CustomFilterVisitor _visitor = new CustomFilterVisitor(new QueryableCombinator());
-    
-    
-    /// <inheritdoc />
-    public override void ConfigureField(
-        string argumentName,
-        IObjectFieldDescriptor descriptor)
-    {
-        QueryableFilterContext VisitFilterArgumentExecutor(
-            IValueNode valueNode,
-            IFilterInputType filterInput,
-            bool inMemory)
+        if (fieldDefinition is null)
         {
-            var visitorContext = new CustomQueryableFilterContext(filterInput, inMemory);
-
-            // rewrite GraphQL input object into expression tree.
-            _visitor.Visit(valueNode, visitorContext);
-
-            return visitorContext;
+            var lambdaBody = filterExpression.Body;
+            var parameterToReplace = filterExpression.Parameters[0];
+            var parameterSubstitute = context.
         }
-
-        var contextData = descriptor.Extend().Definition.ContextData;
-        var argumentKey = (VisitFilterArgument)VisitFilterArgumentExecutor;
-        contextData[ContextVisitFilterArgumentKey] = argumentKey;
-        contextData[ContextArgumentNameKey] = argumentName;
-    }
-}
-
-public class CustomQueryableFilterContext : QueryableFilterContext
-{
-    public CustomQueryableFilterContext(IFilterInputType initialType, bool inMemory) : base(initialType, inMemory)
-    {
-    }
-}
-
-public class CustomFilterVisitor : FilterVisitor<CustomQueryableFilterContext, Expression>
-{
-    public CustomFilterVisitor(IFilterOperationCombinator<CustomQueryableFilterContext, Expression> combinator) : base(combinator)
-    {
-    }
-    
-    protected override ISyntaxVisitorAction OnFieldEnter(
-        CustomQueryableFilterContext context,
-        IFilterField field,
-        ObjectFieldNode node)
-    {
-        var fieldType = context.Types.Peek();
-        var fieldType2 = field.Type;
         
-        if (field.Handler is IFilterFieldHandler<QueryableFilterContext, Expression> handler &&
-            handler.TryHandleEnter(
-                context,
-                field,
-                node,
-                out var action))
+        context.PushInstance(instance);
+    }
+
+    public void AfterProjection(QueryableProjectionContext context, ISelection selection)
+    {
+    }
+
+    private sealed class GetMostNestedMemberAccessOnParameterExpressionVisitor : ExpressionVisitor
+    {
+        private MemberExpression? _result;
+    }
+    
+    private sealed class ReplaceVariableExpressionVisitor : ExpressionVisitor
+    {
+        private readonly Expression _replacement;
+        private readonly ParameterExpression _parameter;
+
+        public ReplaceVariableExpressionVisitor(
+            Expression replacement,
+            ParameterExpression parameter)
         {
-            return action;
+            _replacement = replacement;
+            _parameter = parameter;
         }
-        return SyntaxVisitor.SkipAndLeave;
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            if (node == _parameter)
+                return _replacement;
+            return base.VisitParameter(node);
+        }
+
+        public static LambdaExpression ReplaceParameter(
+            Expression currentProjection,
+            Expression filter)
+        {
+            return null;
+        }
     }
 }
