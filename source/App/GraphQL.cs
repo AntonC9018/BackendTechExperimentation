@@ -76,6 +76,7 @@ public class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
+        descriptor.GlobalFilter(p => !p.Name.Contains('A'));
         descriptor.BindFieldsImplicitly();
     }
 }
@@ -97,9 +98,19 @@ public class QueryType : ObjectType
             .Field("test")
             .Type<NonNullType<ListType<NonNullType<PersonType>>>>()
             .UseDbContext<ApplicationDbContext>()
+            .Use(next => async ctx =>
+            {
+                await next(ctx);
+                Console.WriteLine("Breakpoint");
+            })
             // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
             // .Use<WhereMiddleware>()
             .UseProjection()
+            .Use(next => async ctx =>
+            {
+                await next(ctx);
+                Console.WriteLine("Breakpoint");
+            })
             .UseFiltering()
             .UseSorting()
             .Resolve(ctx => ctx

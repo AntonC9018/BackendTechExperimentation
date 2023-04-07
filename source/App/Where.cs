@@ -1,11 +1,13 @@
 ﻿using System.Collections;
 using System.Linq.Expressions;
+using System.Reflection;
 using HotChocolate;
 using HotChocolate.Data.Projections;
 using HotChocolate.Data.Projections.Expressions;
 using HotChocolate.Data.Projections.Expressions.Handlers;
 using HotChocolate.Execution.Processing;
 using HotChocolate.Types;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace efcore_transactions;
 
@@ -50,7 +52,24 @@ public class GlobalFilterValidationException : Exception
 
 public class HelloWorldProjectionFieldInterceptor : IProjectionFieldInterceptor<QueryableProjectionContext>
 {
-    private record struct Info(bool IsList, bool IsNonNull, IReadOnlyDictionary<string, object?> ContextData);
+    private static readonly MethodInfo WhereWithoutIndexMethod = typeof(Enumerable)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(m =>
+        {
+            if (m.Name != "Where")
+                return false;
+            
+            var parameters = m.GetParameters();
+            if (parameters.Length != 2)
+                return false;
+
+            var func = parameters[1];
+            var genericArgsToFunc = func.ParameterType.GetGenericArguments();
+
+            return genericArgsToFunc.Length == 2;
+        });
+    
+    private record struct Info(bool IsList, bool IsNonNull, Type UnwrappedRuntimeType, IReadOnlyDictionary<string, object?> ContextData);
     private record struct ProjectionSetupArgs(
         QueryableProjectionContext Context,
         ISelection Selection,
@@ -61,9 +80,29 @@ public class HelloWorldProjectionFieldInterceptor : IProjectionFieldInterceptor<
     {
         if (a.Info is not { IsList: true, IsNonNull: true })
             return;
+        
+        var projectionExpression = a.Context.PopInstance();
 
-        // var projectionExpression = a.Context.PopInstance();
-        // x --> x.Where(y => a.FilterExpression(y))
+        if (a.Info.IsList)
+        {
+            // x --> x.Where(y => a.FilterExpression(y))
+            
+            // y => a.FilterExpression(y)
+            var innerDelegate = a.FilterExpression;
+    
+            // x.Where(y => a.FilterExpression(y))
+            var unwrappedType = a.Info.UnwrappedRuntimeType;
+            var typedWhereMethod = WhereWithoutIndexMethod.MakeGenericMethod(unwrappedType);
+            var methodInvocationExpression = Expression.Call(typedWhereMethod, projectionExpression, innerDelegate);
+            
+            a.Context.PushInstance(methodInvocationExpression);
+        }
+        else
+        {
+            // x --> a.FilterExpression(x)
+            var newExpression = ReplaceVariableExpressionVisitor.ReplaceAndGetBody(a.FilterExpression, projectionExpression);
+            a.Context.PushInstance(newExpression);
+        }
     }
 
     private void AfterProjectionAction(ProjectionSetupArgs a)
@@ -135,11 +174,16 @@ public class HelloWorldProjectionFieldInterceptor : IProjectionFieldInterceptor<
                 isList = false;
             }
         }
+
+        {
+            if (type is NonNullType nonNullType)
+                type = nonNullType.Type;
+        }
         
         if (type is not IHasReadOnlyContextData contextDataProvider)
             return null;
         
-        return new Info(isList, isNonNull, contextDataProvider.ContextData);
+        return new Info(isList, isNonNull, type.ToRuntimeType(), contextDataProvider.ContextData);
     }
     
     public bool CanHandle(ISelection selection)
@@ -202,8 +246,7 @@ public class RelationProjectionFieldInterceptor : IProjectionFieldInterceptor<Qu
         var fieldDefinition = field.ResolverMember;
         var instance = context.PopInstance();
 
-        var visitor = new ReplaceVariableExpressionVisitor(filterExpression);
-        var nextInstance = visitor.Visit(instance);
+        var nextInstance = ReplaceVariableExpressionVisitor.ReplaceAndGetBody(filterExpression, instance);
         
         context.PushInstance(nextInstance);
     }
@@ -225,13 +268,6 @@ public sealed class ReplaceVariableExpressionVisitor : ExpressionVisitor
         Replacement = replacement;
         Parameter = parameter;
     }
-    
-    public ReplaceVariableExpressionVisitor(
-        LambdaExpression thing)
-    {
-        Replacement = thing.Body;
-        Parameter = thing.Parameters[0];
-    }
 
     protected override Expression VisitParameter(ParameterExpression node)
     {
@@ -239,5 +275,11 @@ public sealed class ReplaceVariableExpressionVisitor : ExpressionVisitor
             return Replacement;
 
         return base.VisitParameter(node);
+    }
+
+    public static Expression ReplaceAndGetBody(LambdaExpression lambda, Expression parameterReplacement)
+    {
+        var visitor = new ReplaceVariableExpressionVisitor(parameterReplacement, lambda.Parameters[0]);
+        return visitor.Visit(lambda.Body);
     }
 }
