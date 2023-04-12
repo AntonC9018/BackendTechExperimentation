@@ -6,7 +6,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.OperationFilter<SwaggerFilters>();
+    c.OperationFilter<IgnoreParametersFilter>();
 });
 
 var app = builder.Build();

@@ -10,7 +10,7 @@ public interface ISwaggerIgnoreParameter
     
 }
 
-public sealed class SwaggerFilters : IOperationFilter
+public sealed class IgnoreParametersFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
