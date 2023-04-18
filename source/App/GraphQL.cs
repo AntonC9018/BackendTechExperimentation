@@ -98,6 +98,7 @@ public class QueryType : ObjectType
             .Field("test")
             .Type<NonNullType<ListType<NonNullType<PersonType>>>>()
             .UseDbContext<ApplicationDbContext>()
+            .UseGlobalFilter()
             .Use(next => async ctx =>
             {
                 await next(ctx);

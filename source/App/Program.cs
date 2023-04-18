@@ -22,8 +22,7 @@ builder.Services.AddEndpointsApiExplorer();
     graph.AddProjections(descriptor =>
     {
         var provider = new QueryableProjectionProvider(x => x
-            .RegisterFieldInterceptor<RelationProjectionFieldInterceptor>()
-            .RegisterFieldInterceptor<HelloWorldProjectionFieldInterceptor>()
+            .RegisterFieldInterceptor<GlobalFilterProjectionFieldInterceptor>()
             .AddDefaults());
         descriptor.Provider(provider);
     });
