@@ -40,7 +40,7 @@ public static class GlobalFilterExtensions
         where T : class
     {
         if (expression is not LambdaExpression expr)
-            throw new GlobalFilterValidationException("Expression must be a lambda expression");
+            throw new GlobalFilterValidationException("Expression must be a lambda expression", typeof(T));
        
         // We have to wrap it. 
         var filter = new ExpressionGlobalFilter(expression);
@@ -216,7 +216,7 @@ public static class GlobalFilterHelper
         if (filter is IGlobalFilter globalFilter)
             return globalFilter.GetFilter(context);
         
-        throw new GlobalFilterValidationException("Expected a lambda expression");
+        throw new GlobalFilterValidationException("Expected a lambda expression", context.Selection.Type.ToRuntimeType());
     }
 
     private static MethodInfo GetGenericWhere(Type type)
@@ -280,7 +280,7 @@ public interface IGlobalFilter<T> : IGlobalFilter
     Expression<Func<T, bool>> GetFilterT(IResolverContext context);
 }
 
-public class GlobalFilterApplicationMiddleware
+public sealed class GlobalFilterApplicationMiddleware
 {
     private readonly FieldDelegate _next;
 
@@ -333,120 +333,74 @@ public class GlobalFilterApplicationMiddleware
 
 public class GlobalFilterValidationException : Exception
 {
-    public GlobalFilterValidationException(string message) : base(message)
+    public Type Type { get; }
+    
+    public GlobalFilterValidationException(string message, Type type) : base(message)
     {
+        Type = type;
     }
+
+    public override string Message => $"{base.Message} for type {Type}.";
 }
 
 public class GlobalFilterProjectionFieldInterceptor : IProjectionFieldInterceptor<QueryableProjectionContext>
 {
     private record struct ProjectionSetupArgs(
-        QueryableProjectionContext Context,
-        ISelection Selection,
+        Expression ProjectionExpression,
         GlobalFilterHelper.Info Info,
         LambdaExpression FilterExpression);
-    
-    private void BeforeProjectionAction(ProjectionSetupArgs a)
-    {
-        var projectionExpression = a.Context.PopInstance();
 
-        if (a.Info.IsList)
-        {
-            // x --> x.Where(y => a.FilterExpression(y))
-            
-            // y => a.FilterExpression(y)
-            var innerDelegate = a.FilterExpression;
-    
-            // x.Where(y => a.FilterExpression(y))
-            var unwrappedType = a.Info.UnwrappedRuntimeType;
-            var typedWhereMethod = GlobalFilterHelper.EnumerableWhereWithoutIndexMethod.MakeGenericMethod(unwrappedType);
-            var methodInvocationExpression = Expression.Call(typedWhereMethod, projectionExpression, innerDelegate);
-            
-            a.Context.PushInstance(methodInvocationExpression);
-        }
-        else
-        {
-            // x --> a.FilterExpression(x) ? x : null
-            // var newExpression = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(a.FilterExpression, projectionExpression);
-            // var nullExpression = Expression.Constant(null, projectionExpression.Type);
-            // var ternary = Expression.Condition(newExpression, projectionExpression,nullExpression);
-            // a.Context.PushInstance(ternary);
-        }
-        
-        // Doesn't work right:
-        
-        // query People {
-        //     test {
-        //         parent
-        //         {
-        //             name,
-        //             projects {
-        //                 id,
-        //                 projectName
-        //             }
-        //         }
-        //     }
-        // }
-        
-        // It should add to the null check.
-        // !(_s1.Name.Contains("A")) ? _s1 is also wrong.
-        // DbSet<Person>()
-        //     .AsNoTracking()
-        //     .Select(_s1 => new Person{ Parent = !(_s1.Name.Contains("A")) ? _s1 : null.Parent != null ? new Person{ 
-        //             Name = !(_s1.Name.Contains("A")) ? _s1 : null.Parent.Name, 
-        //             Projects = !(_s1.Name.Contains("A")) ? _s1 : null.Parent.Projects
-        //                 .Where(p => p.ProjectName.Contains(" "))
-        //                 .Select(p2 => new Project{ 
-        //                         Id = p2.Id, 
-        //                         ProjectName = p2.ProjectName 
-        //                     }
-        //                 )
-        //                 .ToList() 
-        //         }
-        //         : default(Person) }
-        //     )
+    private Expression HandleListFilter(ProjectionSetupArgs args)
+    {
+        // y => a.FilterExpression(y)
+        var innerDelegate = args.FilterExpression;
+
+        // x.Where(y => a.FilterExpression(y))
+        var unwrappedType = args.Info.UnwrappedRuntimeType;
+        var typedWhereMethod = GlobalFilterHelper.EnumerableWhereWithoutIndexMethod.MakeGenericMethod(unwrappedType);
+        var methodInvocationExpression = Expression.Call(typedWhereMethod, args.ProjectionExpression, innerDelegate);
+
+        return methodInvocationExpression;
     }
 
-    private void AfterProjectionAction(ProjectionSetupArgs a)
+    private Expression HandleNonListFilter(ProjectionSetupArgs args)
     {
-        if (a.Info.IsNonNull)
+        // x --> a.FilterExpression(x) ? x : null
+        var newExpression = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(args.FilterExpression, args.ProjectionExpression);
+        var nullExpression = Expression.Constant(null, args.ProjectionExpression.Type);
+        var ternary = Expression.Condition(newExpression, args.ProjectionExpression,nullExpression);
+        
+        return ternary; 
+    }
+
+    private void HandleProjection(QueryableProjectionContext context, ISelection selection, bool isAfter)
+    {
+        var info = GlobalFilterHelper.GetTypeInfo(selection.Type)!.Value;
+        bool shouldHandleList = !isAfter && info.IsList;
+        bool shouldHandleInstance = isAfter && !info.IsList;
+        if (!shouldHandleList && !shouldHandleInstance)
             return;
-
-        if (a.Info.IsList)
-        {
-            // 1st case: (??)
-            // x != null ? x : null   -->   x != null ? x.Where(y => a.FilterExpression(y)) : null
-            
-            // 2nd case: (??)
-            // x   -->   same as above
-        }
+        
+        var filterExpression = GlobalFilterHelper.GetExpression(context.ResolverContext, info);
+        if (filterExpression is null)
+            return;
+        
+        var projectionExpression = context.PopInstance(); 
+        var args = new ProjectionSetupArgs(projectionExpression, info, filterExpression);
+        
+        if (shouldHandleList)
+            projectionExpression = HandleListFilter(args);
         else
-        {
-            // 1st case: (??)
-            // x != null ? x : null   -->   x != null ? (a.FilterExpression(y) ? x : null) : null
-            // Or 
-            // x != null ? x : null   -->   (x != null && a.FilterExpression(x)) ? x : null
-            
-            // 2nd case: (??)
-            // x   -->   same as above
-        }
+            projectionExpression = HandleNonListFilter(args);
+        
+        context.PushInstance(projectionExpression);
     }
-
-    public GlobalFilterProjectionFieldInterceptor()
-    {
-        _afterProjection = ProjectionSetup(AfterProjectionAction);
-        _beforeProjection = ProjectionSetup(BeforeProjectionAction);
-    }
-
-    private readonly Action<QueryableProjectionContext, ISelection> _beforeProjection;
-    private readonly Action<QueryableProjectionContext, ISelection> _afterProjection;
-    
+ 
     public void BeforeProjection(QueryableProjectionContext context, ISelection selection) =>
-        _beforeProjection(context, selection);
+        HandleProjection(context, selection, isAfter: false);
 
     public void AfterProjection(QueryableProjectionContext context, ISelection selection) =>
-        _afterProjection(context, selection);
-    
+        HandleProjection(context, selection, isAfter: true);
 
     public bool CanHandle(ISelection selection)
     {
@@ -461,33 +415,17 @@ public class GlobalFilterProjectionFieldInterceptor : IProjectionFieldIntercepto
         if (!hasFilter)
             return false;
 
-        bool shouldSkip = contextData.ContainsKey(GlobalFilterConstants.IgnoreKey);
-        if (shouldSkip)
-            return false;
-
+        void Throw(string message)
+        {
+            throw new GlobalFilterValidationException(message, selection.Type.ToRuntimeType());
+        }
+        
         if (infoValue is { IsList: false, IsNonNull: true })
-            throw new GlobalFilterValidationException("Cannot be applied to non-nullable fields");
+            Throw("Cannot be applied to non-nullable non-list fields.");
+        
+        if (infoValue is { IsList: true, IsNonNull: false })
+            Throw("For now, cannot be applied to nullable lists.");
         
         return true;
-    }
-    
-    private Action<QueryableProjectionContext, ISelection> ProjectionSetup(Action<ProjectionSetupArgs> action)
-    {
-        return (context, selection) =>
-        {
-            var info = GlobalFilterHelper.GetTypeInfo(selection.Type)!.Value;
-            // NOTE: gonna make the expression twice, need to refactor the cases into a bool check.
-            var filterExpression = GlobalFilterHelper.GetExpression(context.ResolverContext, info);
-            if (filterExpression is null)
-                return;
-            
-            action(new ProjectionSetupArgs
-            {
-                Context = context,
-                Selection = selection,
-                Info = info,
-                FilterExpression = filterExpression,
-            });
-        };
     }
 }
