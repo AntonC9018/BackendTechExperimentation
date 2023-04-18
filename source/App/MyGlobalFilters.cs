@@ -7,6 +7,7 @@ namespace efcore_transactions;
 
 public class IsUserAdminIgnoreCondition : IIgnoreCondition
 {
+    public static readonly IsUserAdminIgnoreCondition Instance = new();
     public bool ShouldIgnore(IResolverContext context)
     {
         var httpContext = context.Service<IHttpContextAccessor>().HttpContext!;

@@ -89,6 +89,7 @@ public class PersonType : ObjectType<Person>
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
         descriptor.Authorize();
+        descriptor.GlobalFilterIgnoreCondition(IsUserAdminIgnoreCondition.Instance);
         descriptor.GlobalFilter(UserNameExtractor.Instance,
             (p, name) => p.Name.Contains(name));
         // descriptor.GlobalFilter(p => !p.Name.Contains("A"));

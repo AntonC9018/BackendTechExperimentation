@@ -26,7 +26,9 @@ public class TestAuthenticationHandler : AuthenticationHandler<MyAuthenticationO
     {
         if (Request.Headers.TryGetValue(HeaderNames.Authorization, out var auth))
         {
-            var claims = new[] { new Claim(ClaimTypes.Name, auth.ToString()) };
+            var claims = new List<Claim> { new(ClaimTypes.Name, auth.ToString()) };
+            if (auth == "Anton")
+                claims.Add(new("Admin", "1"));
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
