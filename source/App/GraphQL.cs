@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
+using System.Security.Claims;
 using HotChocolate.Data;
+using HotChocolate.Resolvers;
 using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,13 +73,25 @@ public static class GraphQlHelper
     }
 }
 
+public class UserNameExtractor : IValueExtractor<string>
+{
+    public static readonly UserNameExtractor Instance = new();
+    public string GetValue(IResolverContext context)
+    {
+        var httpContext = context.Services.GetRequiredService<IHttpContextAccessor>().HttpContext!;
+        var userName = httpContext.User.Claims.First(c => c.Type == ClaimTypes.Name).Value;
+        return userName;
+    }
+}
 
 public class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
-        // var filter = new PredicateGlobalUserFilter<Person>((p, u) => u.Claims.First())
-        descriptor.GlobalFilter(p => !p.Name.Contains("A"));
+        descriptor.Authorize();
+        descriptor.GlobalFilter(UserNameExtractor.Instance,
+            (p, name) => p.Name.Contains(name));
+        // descriptor.GlobalFilter(p => !p.Name.Contains("A"));
         descriptor.BindFieldsImplicitly();
     }
 }

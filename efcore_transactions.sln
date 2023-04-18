@@ -3,6 +3,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "efcore_transactions", "sour
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GreenDonut", "submodules\graphql-platform\src\GreenDonut\src\Core\GreenDonut.csproj", "{C3376DC4-BC42-4605-B7FE-370AD023370D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.AspNetCore.Authorization", "submodules\graphql-platform\src\HotChocolate\AspNetCore\src\AspNetCore.Authorization\HotChocolate.AspNetCore.Authorization.csproj", "{8DF6F7E4-A525-4DF8-9F5C-7F417770BF87}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.AspNetCore", "submodules\graphql-platform\src\HotChocolate\AspNetCore\src\AspNetCore\HotChocolate.AspNetCore.csproj", "{0C82A7C3-B17D-4B1C-9265-577C18C68683}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotChocolate.Transport.Sockets", "submodules\graphql-platform\src\HotChocolate\AspNetCore\src\Transport.Sockets\HotChocolate.Transport.Sockets.csproj", "{FF2FB79F-1CAE-455B-A32A-71C7F3B21903}"
@@ -67,6 +69,10 @@ Global
 		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3376DC4-BC42-4605-B7FE-370AD023370D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DF6F7E4-A525-4DF8-9F5C-7F417770BF87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DF6F7E4-A525-4DF8-9F5C-7F417770BF87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DF6F7E4-A525-4DF8-9F5C-7F417770BF87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DF6F7E4-A525-4DF8-9F5C-7F417770BF87}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C82A7C3-B17D-4B1C-9265-577C18C68683}.Release|Any CPU.ActiveCfg = Release|Any CPU

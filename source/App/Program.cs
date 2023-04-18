@@ -12,12 +12,18 @@ void ConfigureDbContext(DbContextOptionsBuilder c)
     c.UseSqlServer(projectManagementConnectionString);
 }
 
+builder.Services.AddOptions<MyAuthenticationOptions>();
+builder.Services.AddAuthentication("Test")
+    .AddScheme<MyAuthenticationOptions, TestAuthenticationHandler>("Test", o => { });
+builder.Services.AddAuthorization();
+
 builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(ConfigureDbContext);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 {
     var graph = builder.Services.AddGraphQLServer();
     graph.AddGraphQLServer();
+    graph.AddAuthorization();
     graph.AddQueryType<QueryType>();
     graph.AddProjections(descriptor =>
     {
@@ -38,6 +44,11 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapGraphQL();
+app.MapGraphQLSchema();
+
 {
     using var scope = app.Services.CreateScope();
     var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
@@ -45,8 +56,5 @@ var app = builder.Build();
 
     await Seeder.Seed(dbContext);
 }
-
-app.MapGraphQL();
-app.MapGraphQLSchema();
 
 app.Run();

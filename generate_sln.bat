@@ -1,0 +1,1 @@
+slngen source\App\efcore_transactions.csproj --launch false -o efcore_transactions.sln

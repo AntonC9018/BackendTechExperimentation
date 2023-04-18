@@ -14,7 +14,7 @@ public static class BoxExtensions
     {
         return Expression.MakeMemberAccess(
             Expression.Constant(box),
-            typeof(Box<T>).GetProperty(nameof(box.value))!);
+            typeof(Box<T>).GetField(nameof(box.value))!);
     }
     
     public static Box<T> Box<T>(this T value)

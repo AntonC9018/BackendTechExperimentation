@@ -69,6 +69,87 @@ public static class GlobalFilterExtensions
         descriptor.Use<GlobalFilterApplicationMiddleware>();
         return descriptor;
     }
+
+    public static IObjectTypeDescriptor<T> GlobalFilter<T, TContext>(
+        this IObjectTypeDescriptor<T> descriptor,
+        IValueExtractor<TContext> contextExtractor,
+        Expression<Func<T, TContext, bool>> expression)
+    
+        where T : class
+    {
+        var filter = new GlobalFilterWithContext<T, TContext>(expression, contextExtractor);
+        descriptor.GlobalFilter(filter);
+        return descriptor;
+    }
+}
+
+public interface IValueExtractor<T>
+{
+    T GetValue(IResolverContext context);
+}
+
+public static class ValueExtractor
+{
+    public static IValueExtractor<T> Create<T>(Func<IResolverContext, T> getter)
+    {
+        return new ValueExtractor<T>(getter);
+    }        
+}
+
+public sealed class ValueExtractor<T> : IValueExtractor<T>
+{
+    private readonly Func<IResolverContext, T> _getter;
+    
+    public ValueExtractor(Func<IResolverContext, T> getter)
+    {
+        _getter = getter;
+    }
+    
+    public T GetValue(IResolverContext context)
+    {
+        return _getter(context);
+    }
+}
+
+public sealed class GlobalFilterWithContext<T, TContext> : IGlobalFilter<T>
+{
+    public Expression<Func<T, TContext, bool>> Predicate { get; }
+    public IValueExtractor<TContext> ValueExtractor { get; }
+
+    public GlobalFilterWithContext(
+        Expression<Func<T, TContext, bool>> predicate,
+        IValueExtractor<TContext> valueExtractor)
+    {
+        Predicate = predicate;
+        ValueExtractor = valueExtractor;
+    }
+    
+    public Expression<Func<T, bool>> GetFilterT(IResolverContext context)
+    {
+        var value = ValueExtractor.GetValue(context);
+        var box = value.Box();
+        var expression = Predicate;
+        var queryParameter = expression.Parameters[0];
+        var contextParameter = expression.Parameters[1];
+        
+        // (x, u) => x + u   -->   x + u
+        var body = expression.Body;
+        
+        // x + u  -->   x + box.value
+        var boxAccessExpression = box.MakeMemberAccess(); 
+        var visitor = new ReplaceVariableExpressionVisitor(boxAccessExpression, contextParameter);
+        body = visitor.Visit(body);
+        
+        // x + box.value  -->  x => x + box.value
+        var lambda = Expression.Lambda<Func<T, bool>>(body, queryParameter);
+        
+        return lambda;    
+    }
+
+    public LambdaExpression GetFilter(IResolverContext context)
+    {
+        return GetFilterT(context);
+    }
 }
 
 public static class GlobalFilterHelper
