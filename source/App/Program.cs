@@ -38,6 +38,14 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
+{
+    using var scope = app.Services.CreateScope();
+    var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+    using var dbContext = dbContextFactory.CreateDbContext();
+
+    await Seeder.Seed(dbContext);
+}
+
 app.MapGraphQL();
 app.MapGraphQLSchema();
 

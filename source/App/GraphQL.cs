@@ -76,6 +76,7 @@ public class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
+        // var filter = new PredicateGlobalUserFilter<Person>((p, u) => u.Claims.First())
         descriptor.GlobalFilter(p => !p.Name.Contains("A"));
         descriptor.BindFieldsImplicitly();
     }

@@ -17,6 +17,21 @@ public static class GlobalFilterConstants
     public const string IgnoreKey = "World";
 }
 
+public class ExpressionGlobalFilter : IGlobalFilter
+{
+    private readonly LambdaExpression _expression;
+
+    public ExpressionGlobalFilter(LambdaExpression expression)
+    {
+        _expression = expression;
+    }
+
+    public LambdaExpression GetFilter(IResolverContext context)
+    {
+        return _expression;
+    }
+}
+
 public static class GlobalFilterExtensions
 {
     public static IObjectTypeDescriptor<T> GlobalFilter<T>(
@@ -26,7 +41,26 @@ public static class GlobalFilterExtensions
     {
         if (expression is not LambdaExpression expr)
             throw new GlobalFilterValidationException("Expression must be a lambda expression");
-        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = expr);
+       
+        // We have to wrap it. 
+        var filter = new ExpressionGlobalFilter(expression);
+        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = filter);
+        return descriptor;
+    }
+
+    public static IObjectTypeDescriptor<T> GlobalFilter<T>(
+        this IObjectTypeDescriptor<T> descriptor,
+        IGlobalFilter<T> filter)
+    {
+        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = filter);
+        return descriptor;
+    }
+
+    public static IObjectTypeDescriptor<T> GlobalFilterIgnoreCondition<T>(
+        this IObjectTypeDescriptor<T> descriptor,
+        IIgnoreCondition ignoreCondition)
+    {
+        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.IgnoreKey] = ignoreCondition);
         return descriptor;
     }
 
@@ -116,9 +150,23 @@ public static class GlobalFilterHelper
                 var parameters = m.GetParameters();
                 if (parameters.Length != 2)
                     return false;
-    
-                var func = parameters[1];
-                var genericArgsToFunc = func.ParameterType.GetGenericArguments();
+                    
+                Type[] genericArgsToFunc;
+                if (type == typeof(Enumerable))
+                {
+                    var func = parameters[1];
+                    genericArgsToFunc = func.ParameterType.GetGenericArguments();
+                }
+                else if (type == typeof(Queryable))
+                {
+                    var expr = parameters[1];
+                    var func = expr.ParameterType.GetGenericArguments()[0];
+                    genericArgsToFunc = func.GetGenericArguments();
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Wrong type {type}");
+                }
     
                 return genericArgsToFunc.Length == 2;
             });
@@ -144,6 +192,11 @@ public interface IIgnoreCondition
 public interface IGlobalFilter
 {
     LambdaExpression GetFilter(IResolverContext context);
+}
+
+public interface IGlobalFilter<T> : IGlobalFilter
+{
+    Expression<Func<T, bool>> GetFilterT(IResolverContext context);
 }
 
 public class GlobalFilterApplicationMiddleware
@@ -233,10 +286,10 @@ public class GlobalFilterProjectionFieldInterceptor : IProjectionFieldIntercepto
         else
         {
             // x --> a.FilterExpression(x) ? x : null
-            var newExpression = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(a.FilterExpression, projectionExpression);
-            var nullExpression = Expression.Constant(null, projectionExpression.Type);
-            var ternary = Expression.Condition(newExpression, projectionExpression,nullExpression);
-            a.Context.PushInstance(ternary);
+            // var newExpression = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(a.FilterExpression, projectionExpression);
+            // var nullExpression = Expression.Constant(null, projectionExpression.Type);
+            // var ternary = Expression.Condition(newExpression, projectionExpression,nullExpression);
+            // a.Context.PushInstance(ternary);
         }
         
         // Doesn't work right:

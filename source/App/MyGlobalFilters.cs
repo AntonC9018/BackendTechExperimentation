@@ -14,14 +14,17 @@ public class IsUserAdminIgnoreCondition : IIgnoreCondition
     }
 }
 
-public abstract class GlobalUserFilter<T> : IGlobalFilter
+public abstract class GlobalUserFilter<T> : IGlobalFilter<T>
 {
     public abstract Expression<Func<T, bool>> GetFilter(ClaimsPrincipal user);
-    public LambdaExpression GetFilter(IResolverContext context)
+
+    public Expression<Func<T, bool>> GetFilterT(IResolverContext context)
     {
         var httpContext = context.Service<IHttpContextAccessor>().HttpContext!;
         return GetFilter(httpContext.User!);
     }
+
+    public LambdaExpression GetFilter(IResolverContext context) => GetFilterT(context);
 }
 
 public class PredicateGlobalUserFilter<T> : GlobalUserFilter<T>
