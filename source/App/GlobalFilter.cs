@@ -13,8 +13,8 @@ namespace efcore_transactions;
 
 public static class GlobalFilterConstants
 {
-    public const string FilterKey = "Hello";
-    public const string IgnoreKey = "World";
+    public const string FilterKey = "GlobalFilter";
+    public const string IgnoreKey = "GlobalFilterIgnore";
 }
 
 public class ExpressionGlobalFilter : IGlobalFilter
@@ -90,7 +90,7 @@ public interface IValueExtractor<T>
 
 public static class ValueExtractor
 {
-    public static IValueExtractor<T> Create<T>(Func<IResolverContext, T> getter)
+    public static ValueExtractor<T> Create<T>(Func<IResolverContext, T> getter)
     {
         return new ValueExtractor<T>(getter);
     }        
@@ -199,12 +199,12 @@ public static class GlobalFilterHelper
         return new Info(isList, isNonNull, type.ToRuntimeType(), contextDataProvider.ContextData);
     }
     
-    public static LambdaExpression? GetExpression(IResolverContext context, in Info info)
+    public static LambdaExpression? GetExpression(IResolverContext context, IReadOnlyDictionary<string, object?> contextData)
     {
-        if (!info.ContextData.TryGetValue(GlobalFilterConstants.FilterKey, out var filter))
+        if (!contextData.TryGetValue(GlobalFilterConstants.FilterKey, out var filter))
             return null;
         
-        if (info.ContextData.TryGetValue(GlobalFilterConstants.IgnoreKey, out var ignoreCondition))
+        if (contextData.TryGetValue(GlobalFilterConstants.IgnoreKey, out var ignoreCondition))
         {
             if (ignoreCondition is IIgnoreCondition condition
                 && condition.ShouldIgnore(context))
@@ -295,23 +295,19 @@ public sealed class GlobalFilterApplicationMiddleware
     public async Task InvokeAsync(IMiddlewareContext context)
     {
         await _next(context);
-        var maybeInfo = GlobalFilterHelper.GetTypeInfo(context.Selection.Type);
-        if (maybeInfo is null)
+        var maybeContext = GlobalFilterProjectionLogic.GetContext(context, context.Selection.Type);
+        if (maybeContext is null)
             return;
-        
-        var info = maybeInfo.Value; 
-        var expression = GlobalFilterHelper.GetExpression(context, info);
-        if (expression is null)
-            return;
+        var (runtimeType, filterExpression) = maybeContext.Value;
 
         var result = context.Result;
         if (result is null)
             return;
        
         // Handle the potential case where the result is not a list.
-        if (result.GetType().IsAssignableTo(info.UnwrappedRuntimeType))
+        if (result.GetType().IsAssignableTo(runtimeType))
         {
-            var lambda = expression.Compile();
+            var lambda = filterExpression.Compile();
             var passes = (bool) lambda.DynamicInvoke(result)!;
             if (passes)
                 return;
@@ -321,13 +317,10 @@ public sealed class GlobalFilterApplicationMiddleware
         }
 
         if (context.Result is IQueryable query)
-        {
-            context.Result = query.WhereT(expression, info.UnwrappedRuntimeType);
-        }
+            context.Result = query.WhereT(filterExpression, runtimeType);
+        
         else if (context.Result is IEnumerable enumerable)
-        {
-            context.Result = enumerable.AsQueryable().WhereT(expression, info.UnwrappedRuntimeType);
-        }
+            context.Result = enumerable.AsQueryable().WhereT(filterExpression, runtimeType);
     }
 }
 
@@ -343,66 +336,56 @@ public class GlobalFilterValidationException : Exception
     public override string Message => $"{base.Message} for type {Type}.";
 }
 
-public class GlobalFilterProjectionFieldInterceptor : IProjectionFieldInterceptor<QueryableProjectionContext>
+public static class GlobalFilterProjectionLogic
 {
-    private record struct ProjectionSetupArgs(
-        Expression ProjectionExpression,
-        GlobalFilterHelper.Info Info,
-        LambdaExpression FilterExpression);
-
-    private Expression HandleListFilter(ProjectionSetupArgs args)
+    public static Expression HandleListFilter(
+        Expression memberAccessExpression,
+        LambdaExpression filterExpression,
+        Type runtimeType)
     {
         // y => a.FilterExpression(y)
-        var innerDelegate = args.FilterExpression;
+        var innerDelegate = filterExpression;
 
         // x.Where(y => a.FilterExpression(y))
-        var unwrappedType = args.Info.UnwrappedRuntimeType;
+        var unwrappedType = runtimeType;
         var typedWhereMethod = GlobalFilterHelper.EnumerableWhereWithoutIndexMethod.MakeGenericMethod(unwrappedType);
-        var methodInvocationExpression = Expression.Call(typedWhereMethod, args.ProjectionExpression, innerDelegate);
+        var methodInvocationExpression = Expression.Call(typedWhereMethod, memberAccessExpression, innerDelegate);
 
         return methodInvocationExpression;
     }
 
-    private Expression HandleNonListFilter(ProjectionSetupArgs args)
+    public static Expression HandleNonListFilter(
+        Expression projectionExpression,
+        Expression memberAccessExpression,
+        LambdaExpression filterExpression)
     {
-        // x --> a.FilterExpression(x) ? x : null
-        var newExpression = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(args.FilterExpression, args.ProjectionExpression);
-        var nullExpression = Expression.Constant(null, args.ProjectionExpression.Type);
-        var ternary = Expression.Condition(newExpression, args.ProjectionExpression,nullExpression);
+        // p => condition(p)  -->  condition(x.Prop)
+        var expressionToBeChecked = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(
+            filterExpression, memberAccessExpression);
+        var nullExpression = Expression.Constant(null, memberAccessExpression.Type);
+        var memberNotNull = Expression.NotEqual(memberAccessExpression, nullExpression);
+        
+        // x.Prop != null && condition(x.Prop)
+        var condition = Expression.AndAlso(memberNotNull, expressionToBeChecked);
+        var defaultT = Expression.Default(memberAccessExpression.Type);
+
+        // x.Prop != null && condition(x.Prop) ? Projection(x.Prop) : default(T)
+        var ternary = Expression.Condition(condition, projectionExpression, defaultT);
         
         return ternary; 
     }
 
-    private void HandleProjection(QueryableProjectionContext context, ISelection selection, bool isAfter)
+    public static (Type RuntimeType, LambdaExpression FilterExpression)? GetContext(
+        IResolverContext context, IType type)
     {
-        var info = GlobalFilterHelper.GetTypeInfo(selection.Type)!.Value;
-        bool shouldHandleList = !isAfter && info.IsList;
-        bool shouldHandleInstance = isAfter && !info.IsList;
-        if (!shouldHandleList && !shouldHandleInstance)
-            return;
-        
-        var filterExpression = GlobalFilterHelper.GetExpression(context.ResolverContext, info);
+        var info = GlobalFilterHelper.GetTypeInfo(type)!.Value;
+        var filterExpression = GlobalFilterHelper.GetExpression(context, info.ContextData);
         if (filterExpression is null)
-            return;
-        
-        var projectionExpression = context.PopInstance(); 
-        var args = new ProjectionSetupArgs(projectionExpression, info, filterExpression);
-        
-        if (shouldHandleList)
-            projectionExpression = HandleListFilter(args);
-        else
-            projectionExpression = HandleNonListFilter(args);
-        
-        context.PushInstance(projectionExpression);
+            return null;
+        return (info.UnwrappedRuntimeType, filterExpression);
     }
- 
-    public void BeforeProjection(QueryableProjectionContext context, ISelection selection) =>
-        HandleProjection(context, selection, isAfter: false);
-
-    public void AfterProjection(QueryableProjectionContext context, ISelection selection) =>
-        HandleProjection(context, selection, isAfter: true);
-
-    public bool CanHandle(ISelection selection)
+    
+    public static bool CanHandle(ISelection selection)
     {
         var info = GlobalFilterHelper.GetTypeInfo(selection.Type);
         if (info is null)

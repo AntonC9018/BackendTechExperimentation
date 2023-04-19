@@ -27,9 +27,13 @@ builder.Services.AddEndpointsApiExplorer();
     graph.AddQueryType<QueryType>();
     graph.AddProjections(descriptor =>
     {
-        var provider = new QueryableProjectionProvider(x => x
-            .RegisterFieldInterceptor<GlobalFilterProjectionFieldInterceptor>()
-            .AddDefaults());
+        var provider = new QueryableProjectionProvider(x =>
+        {
+            x.RegisterFieldHandler<GlobalFilterQueryableProjectionListHandler>();
+            x.RegisterFieldHandler<GlobalFilterQueryableProjectionFieldHandler>();
+            
+            x.AddDefaults();
+        });
         descriptor.Provider(provider);
     });
     graph.AddFiltering(o =>
