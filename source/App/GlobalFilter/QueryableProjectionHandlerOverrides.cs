@@ -11,29 +11,7 @@ namespace efcore_transactions;
 
 public static class QueryableProjectionHelper
 {
-    public static void AddLevel(this QueryableProjectionScope scope, MemberInfo member, Expression rhs)
-    {
-        var memberBinding = Expression.Bind(member, rhs);
-        scope.Level.Peek().Enqueue(memberBinding);
-    }
-   
-    // Copy-pasted from HotChocolate.Data.Projections.Expressions.ProjectionExpressionBuilder
-    // because it's internal.
-    private static readonly ConstantExpression _null =
-        Expression.Constant(null, typeof(object));
-   
-    public static Expression NotNull(Expression expression)
-    {
-        return Expression.NotEqual(expression, _null);
-    }
     
-    public static Expression NotNullAndAlso(Expression property, Expression condition)
-    {
-        return Expression.Condition(
-            NotNull(property),
-            condition,
-            Expression.Default(property.Type));
-    }
 }
 
 // Copy-pasted from the source code, because there's no other way to implement what I want.
@@ -142,25 +120,47 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         }
        
         Expression nestedProperty = Expression.Property(context.GetInstance(), propertyInfo);
-        Expression memberInit = queryableScope.CreateMemberInit();
         var maybeContext = GlobalFilterProjectionLogic.GetContext(
             context.ResolverContext, selection.Type);
         
-        // Note that we now always add the null check.
-        // InMemory wasn't supposed to be true ever anyway.
-        Expression rhsExpression;
-        if (maybeContext is null)
+        // Condition(x.Field)
+        Expression? checkExpression = null;
+        if (maybeContext is not null)
         {
-            rhsExpression = QueryableProjectionHelper.NotNullAndAlso(
+            checkExpression = GlobalFilterProjectionLogic.HandleNonListFilter(
                 nestedProperty,
-                memberInit);
+                maybeContext.Value.FilterExpression);
+        }
+        
+        // x.Field != null
+        Expression? nullCheckExpression = null;
+        if (context.InMemory
+            // Have to check for null if we'll be doing further checks (?)
+            || checkExpression is not null)
+        {
+            nullCheckExpression = GlobalFilterHelper.NotNull(nestedProperty);
+        }
+       
+        // x.Field != null && Condition(x.Field)
+        Expression? fullCondition = null;
+        if (nullCheckExpression is not null)
+            fullCondition = nullCheckExpression;
+        if (checkExpression is not null)
+            fullCondition = Expression.AndAlso(fullCondition!, checkExpression);
+
+        // x.Field != null && Condition(x.Field) ? Projection(x.Field) : default
+        Expression memberInit = queryableScope.CreateMemberInit();
+        Expression rhsExpression;
+        if (fullCondition is not null)
+        {
+            var defaultT = Expression.Default(nestedProperty.Type);
+            var ternary = Expression.Condition(
+                fullCondition, memberInit, defaultT);
+            rhsExpression = ternary;
         }
         else
         {
-            rhsExpression = GlobalFilterProjectionLogic.HandleNonListFilter(
-                memberInit,
-                nestedProperty,
-                maybeContext.Value.FilterExpression);
+            rhsExpression = memberInit;
         }
         
         parentScope.AddLevel(field.Member, rhsExpression);

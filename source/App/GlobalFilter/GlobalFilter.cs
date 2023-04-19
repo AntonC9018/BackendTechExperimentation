@@ -17,11 +17,11 @@ public static class GlobalFilterConstants
     public const string IgnoreKey = "GlobalFilterIgnore";
 }
 
-public class ExpressionGlobalFilter : IGlobalFilter
+public sealed class ExpressionGlobalFilter : IGlobalFilter
 {
     private readonly LambdaExpression _expression;
 
-    public ExpressionGlobalFilter(LambdaExpression expression)
+    internal ExpressionGlobalFilter(LambdaExpression expression)
     {
         _expression = expression;
     }
@@ -29,6 +29,26 @@ public class ExpressionGlobalFilter : IGlobalFilter
     public LambdaExpression GetFilter(IResolverContext context)
     {
         return _expression;
+    }
+
+    public ExpressionGlobalFilter Create(LambdaExpression expression)
+    {
+        if (expression.Parameters.Count == 0)
+        {
+            throw new ArgumentException(
+                "The expression must have 2 parameters",
+                nameof(expression));
+        }
+        
+        if (expression.Parameters.Count != 2
+            && expression.Parameters[1].Type != typeof(bool))
+        {
+            throw new GlobalFilterValidationException(
+                "The expression must be a predicate",
+                expression.Parameters[0].Type);
+        }
+
+        return new ExpressionGlobalFilter(expression);
     }
 }
 
@@ -39,9 +59,6 @@ public static class GlobalFilterExtensions
         Expression<Func<T, bool>> expression)
         where T : class
     {
-        if (expression is not LambdaExpression expr)
-            throw new GlobalFilterValidationException("Expression must be a lambda expression", typeof(T));
-       
         // We have to wrap it. 
         var filter = new ExpressionGlobalFilter(expression);
         descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = filter);
@@ -83,9 +100,13 @@ public static class GlobalFilterExtensions
     }
 }
 
-public interface IValueExtractor<T>
+/// <summary>
+/// Used to extract a value to be substituted in expressions from the context.
+/// </summary>
+/// <typeparam name="TValue"></typeparam>
+public interface IValueExtractor<out TValue>
 {
-    T GetValue(IResolverContext context);
+    TValue GetValue(IResolverContext context);
 }
 
 public static class ValueExtractor
@@ -111,8 +132,19 @@ public sealed class ValueExtractor<T> : IValueExtractor<T>
     }
 }
 
+/// <summary>
+/// A global filter implementation that substitutes the value of the second parameter
+/// of the given expression for one extracted from the context.
+/// Should be enough for most cases.
+/// </summary>
+/// <typeparam name="T">Runtime field type</typeparam>
+/// <typeparam name="TContext">The type of the curried value</typeparam>
 public sealed class GlobalFilterWithContext<T, TContext> : IGlobalFilter<T>
 {
+#if SHOULD_CACHE
+    private const string ExpressionCacheKey = "GlobalFilterExpression";
+#endif
+    
     public Expression<Func<T, TContext, bool>> Predicate { get; }
     public IValueExtractor<TContext> ValueExtractor { get; }
 
@@ -126,23 +158,16 @@ public sealed class GlobalFilterWithContext<T, TContext> : IGlobalFilter<T>
     
     public Expression<Func<T, bool>> GetFilterT(IResolverContext context)
     {
+#if SHOULD_CACHE
+        if (context.ContextData.TryGetValue(ExpressionCacheKey, out var result))
+            return (Expression<Func<T, bool>>) result!;
+#endif 
         var value = ValueExtractor.GetValue(context);
-        var box = value.Box();
-        var expression = Predicate;
-        var queryParameter = expression.Parameters[0];
-        var contextParameter = expression.Parameters[1];
+        var lambda = GlobalFilterHelper.CurrySecondParameter(Predicate, value);
         
-        // (x, u) => x + u   -->   x + u
-        var body = expression.Body;
-        
-        // x + u  -->   x + box.value
-        var boxAccessExpression = box.MakeMemberAccess(); 
-        var visitor = new ReplaceVariableExpressionVisitor(boxAccessExpression, contextParameter);
-        body = visitor.Visit(body);
-        
-        // x + box.value  -->  x => x + box.value
-        var lambda = Expression.Lambda<Func<T, bool>>(body, queryParameter);
-        
+#if SHOULD_CACHE
+        context.ContextData.Add(ExpressionCacheKey, lambda);
+#endif 
         return lambda;    
     }
 
@@ -263,23 +288,81 @@ public static class GlobalFilterHelper
         query = query.Provider.CreateQuery(methodCallExpression);
         return query;
     }
+
+    public static Expression<Func<T, bool>> CurrySecondParameter<T, TValue>(
+        Expression<Func<T, TValue, bool>> originalPredicate,
+        TValue value)
+    {
+        var box = value.Box();
+        var expression = originalPredicate;
+        var queryParameter = expression.Parameters[0];
+        var contextParameter = expression.Parameters[1];
+        
+        // (x, u) => x + u   -->   x + u
+        var body = expression.Body;
+        
+        // x + u  -->   x + box.value
+        var boxAccessExpression = box.MakeMemberAccess(); 
+        var visitor = new ReplaceVariableExpressionVisitor(boxAccessExpression, contextParameter);
+        body = visitor.Visit(body);
+        
+        // x + box.value  -->  x => x + box.value
+        var lambda = Expression.Lambda<Func<T, bool>>(body, queryParameter);
+
+        return lambda;
+    }
+    
+    public static void AddLevel(this QueryableProjectionScope scope, MemberInfo member, Expression rhs)
+    {
+        var memberBinding = Expression.Bind(member, rhs);
+        scope.Level.Peek().Enqueue(memberBinding);
+    }
+   
+    // Copy-pasted from HotChocolate.Data.Projections.Expressions.ProjectionExpressionBuilder
+    // because it's internal.
+    private static readonly ConstantExpression _null =
+        Expression.Constant(null, typeof(object));
+   
+    public static Expression NotNull(Expression expression)
+    {
+        return Expression.NotEqual(expression, _null);
+    }
+    
+    public static Expression NotNullAndAlso(Expression property, Expression condition)
+    {
+        return Expression.Condition(
+            NotNull(property),
+            condition,
+            Expression.Default(property.Type));
+    }
 }
 
+/// <summary>
+/// Represents a condition that should be checked prior to applying a global filter.
+/// This is useful for example to remove the filter for admins.
+/// Otherwise, the filters could be modified depending on the context data too, of course.
+/// </summary>
 public interface IIgnoreCondition
 {
+    // Should probably add an optional caching layer.
     bool ShouldIgnore(IResolverContext context);
 }
 
 public interface IGlobalFilter
 {
+    /// <returns>A predicate to be applied to the value that's to be filtered</returns>
     LambdaExpression GetFilter(IResolverContext context);
 }
 
 public interface IGlobalFilter<T> : IGlobalFilter
 {
+    /// <returns>A predicate to be applied to the value that's to be filtered</returns>
     Expression<Func<T, bool>> GetFilterT(IResolverContext context);
 }
 
+/// <summary>
+/// Applies the global filter of the query type to the root of the query.
+/// </summary>
 public sealed class GlobalFilterApplicationMiddleware
 {
     private readonly FieldDelegate _next;
@@ -288,9 +371,6 @@ public sealed class GlobalFilterApplicationMiddleware
     {
         _next = next;
     }
-
-    // private static readonly MethodInfo DelegateInvokeTMethod = typeof(Delegate)
-    //     .GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)!; 
     
     public async Task InvokeAsync(IMiddlewareContext context)
     {
@@ -324,7 +404,11 @@ public sealed class GlobalFilterApplicationMiddleware
     }
 }
 
-public class GlobalFilterValidationException : Exception
+/// <summary>
+/// Is thrown if the expression provided by the user can't undergo validation.
+/// Or cannot be applied to some field.
+/// </summary>
+public sealed class GlobalFilterValidationException : Exception
 {
     public Type Type { get; }
     
@@ -355,24 +439,13 @@ public static class GlobalFilterProjectionLogic
     }
 
     public static Expression HandleNonListFilter(
-        Expression projectionExpression,
         Expression memberAccessExpression,
         LambdaExpression filterExpression)
     {
         // p => condition(p)  -->  condition(x.Prop)
         var expressionToBeChecked = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(
             filterExpression, memberAccessExpression);
-        var nullExpression = Expression.Constant(null, memberAccessExpression.Type);
-        var memberNotNull = Expression.NotEqual(memberAccessExpression, nullExpression);
-        
-        // x.Prop != null && condition(x.Prop)
-        var condition = Expression.AndAlso(memberNotNull, expressionToBeChecked);
-        var defaultT = Expression.Default(memberAccessExpression.Type);
-
-        // x.Prop != null && condition(x.Prop) ? Projection(x.Prop) : default(T)
-        var ternary = Expression.Condition(condition, projectionExpression, defaultT);
-        
-        return ternary; 
+        return expressionToBeChecked; 
     }
 
     public static (Type RuntimeType, LambdaExpression FilterExpression)? GetContext(

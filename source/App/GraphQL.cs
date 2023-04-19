@@ -105,7 +105,6 @@ public class QueryType : ObjectType
             .Field("test")
             .Type<NonNullType<ListType<NonNullType<PersonType>>>>()
             .UseDbContext<ApplicationDbContext>()
-            .UseGlobalFilter()
             .Use(next => async ctx =>
             {
                 await next(ctx);
@@ -114,6 +113,7 @@ public class QueryType : ObjectType
             // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
             // .Use<WhereMiddleware>()
             .UseProjection()
+            .UseGlobalFilter()
             .Use(next => async ctx =>
             {
                 await next(ctx);
