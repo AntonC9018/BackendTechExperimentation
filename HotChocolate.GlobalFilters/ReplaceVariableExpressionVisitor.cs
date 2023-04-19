@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace efcore_transactions;
+namespace HotChocolate.GlobalFilters;
 
 public sealed class ReplaceVariableExpressionVisitor : ExpressionVisitor
 {

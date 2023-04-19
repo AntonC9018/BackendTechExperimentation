@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using HotChocolate.GlobalFilters;
 using HotChocolate.Resolvers;
 
 namespace efcore_transactions;

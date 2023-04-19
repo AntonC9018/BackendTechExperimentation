@@ -1,6 +1,7 @@
 using efcore_transactions;
 using HotChocolate.Data;
 using HotChocolate.Data.Projections.Expressions;
+using HotChocolate.GlobalFilters;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,9 +30,7 @@ builder.Services.AddEndpointsApiExplorer();
     {
         var provider = new QueryableProjectionProvider(x =>
         {
-            x.RegisterFieldHandler<GlobalFilterQueryableProjectionListHandler>();
-            x.RegisterFieldHandler<GlobalFilterQueryableProjectionFieldHandler>();
-            
+            x.AddGlobalFilterHandlers();
             x.AddDefaults();
         });
         descriptor.Provider(provider);

@@ -23,6 +23,7 @@
     <ProjectReference Include="$(HotChocolatePath)Data\src\EntityFramework\HotChocolate.Data.EntityFramework.csproj" />
     <ProjectReference Include="$(HotChocolatePath)AspNetCore\src\AspNetCore\HotChocolate.AspNetCore.csproj" />
     <ProjectReference Include="$(HotChocolatePath)AspNetCore\src\AspNetCore.Authorization\HotChocolate.AspNetCore.Authorization.csproj" />
+    <ProjectReference Include="..\..\HotChocolate.GlobalFilters\HotChocolate.GlobalFilters.csproj" />
   </ItemGroup>
 
 </Project>

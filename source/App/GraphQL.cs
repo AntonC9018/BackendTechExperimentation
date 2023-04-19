@@ -1,7 +1,5 @@
-﻿using System.Linq.Expressions;
-using System.Security.Claims;
-using HotChocolate.Data;
-using HotChocolate.Resolvers;
+﻿using HotChocolate.Data;
+using HotChocolate.GlobalFilters;
 using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 
@@ -73,9 +71,7 @@ public static class GraphQlHelper
     }
 }
 
-
-
-public class PersonType : ObjectType<Person>
+public sealed class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
@@ -87,7 +83,7 @@ public class PersonType : ObjectType<Person>
     }
 }
 
-public class ProjectType : ObjectType<Project>
+public sealed class ProjectType : ObjectType<Project>
 {
     protected override void Configure(IObjectTypeDescriptor<Project> descriptor)
     {
@@ -97,7 +93,7 @@ public class ProjectType : ObjectType<Project>
     }
 }
 
-public class QueryType : ObjectType
+public sealed class QueryType : ObjectType
 {
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
@@ -105,20 +101,8 @@ public class QueryType : ObjectType
             .Field("test")
             .Type<NonNullType<ListType<NonNullType<PersonType>>>>()
             .UseDbContext<ApplicationDbContext>()
-            .Use(next => async ctx =>
-            {
-                await next(ctx);
-                Console.WriteLine("Breakpoint");
-            })
-            // .UsePaging<NonNullType<ObjectType<GraphQlPersonDto>>>()
-            // .Use<WhereMiddleware>()
             .UseProjection()
             .UseGlobalFilter()
-            .Use(next => async ctx =>
-            {
-                await next(ctx);
-                Console.WriteLine("Breakpoint");
-            })
             .UseFiltering()
             .UseSorting()
             .Resolve(ctx => ctx

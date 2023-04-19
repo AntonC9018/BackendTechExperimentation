@@ -5,9 +5,27 @@ using HotChocolate.Data.Projections;
 using HotChocolate.Data.Projections.Expressions;
 using HotChocolate.Data.Projections.Expressions.Handlers;
 using HotChocolate.Execution.Processing;
-using HotChocolate.Utilities;
 
-namespace efcore_transactions;
+namespace HotChocolate.GlobalFilters;
+
+public static class ProjectionHelper
+{
+    public static void AddLevelItem(this QueryableProjectionScope scope, MemberInfo member, Expression rhs)
+    {
+        var memberBinding = Expression.Bind(member, rhs);
+        scope.Level.Peek().Enqueue(memberBinding);
+    }
+   
+    // Copy-pasted from HotChocolate.Data.Projections.Expressions.ProjectionExpressionBuilder
+    // because it's internal.
+    private static readonly ConstantExpression _null =
+        Expression.Constant(null, typeof(object));
+   
+    public static Expression NotNull(Expression expression)
+    {
+        return Expression.NotEqual(expression, _null);
+    }
+}
 
 public class GlobalFilterQueryableProjectionListHandler : QueryableProjectionListHandler
 {
@@ -99,7 +117,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
             // Have to check for null if we'll be doing further checks (?)
             || checkExpression is not null)
         {
-            nullCheckExpression = GlobalFilterHelper.NotNull(nestedProperty);
+            nullCheckExpression = ProjectionHelper.NotNull(nestedProperty);
         }
         
         // x.Field != null && Condition(x.Field)

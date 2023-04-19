@@ -1,15 +1,12 @@
 ﻿using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
-using HotChocolate;
-using HotChocolate.Data.Projections;
 using HotChocolate.Data.Projections.Expressions;
-using HotChocolate.Data.Projections.Expressions.Handlers;
 using HotChocolate.Execution.Processing;
 using HotChocolate.Resolvers;
 using HotChocolate.Types;
 
-namespace efcore_transactions;
+namespace HotChocolate.GlobalFilters;
 
 public static class GlobalFilterConstants
 {
@@ -49,131 +46,6 @@ public sealed class ExpressionGlobalFilter : IGlobalFilter
         }
 
         return new ExpressionGlobalFilter(expression);
-    }
-}
-
-public static class GlobalFilterExtensions
-{
-    public static IObjectTypeDescriptor<T> GlobalFilter<T>(
-        this IObjectTypeDescriptor<T> descriptor,
-        Expression<Func<T, bool>> expression)
-        where T : class
-    {
-        // We have to wrap it. 
-        var filter = new ExpressionGlobalFilter(expression);
-        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = filter);
-        return descriptor;
-    }
-
-    public static IObjectTypeDescriptor<T> GlobalFilter<T>(
-        this IObjectTypeDescriptor<T> descriptor,
-        IGlobalFilter<T> filter)
-    {
-        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = filter);
-        return descriptor;
-    }
-
-    public static IObjectTypeDescriptor<T> GlobalFilterIgnoreCondition<T>(
-        this IObjectTypeDescriptor<T> descriptor,
-        IIgnoreCondition ignoreCondition)
-    {
-        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.IgnoreKey] = ignoreCondition);
-        return descriptor;
-    }
-
-    public static IObjectFieldDescriptor UseGlobalFilter(this IObjectFieldDescriptor descriptor)
-    {
-        descriptor.Use<GlobalFilterApplicationMiddleware>();
-        return descriptor;
-    }
-
-    public static IObjectTypeDescriptor<T> GlobalFilter<T, TContext>(
-        this IObjectTypeDescriptor<T> descriptor,
-        IValueExtractor<TContext> contextExtractor,
-        Expression<Func<T, TContext, bool>> expression)
-    
-        where T : class
-    {
-        var filter = new GlobalFilterWithContext<T, TContext>(expression, contextExtractor);
-        descriptor.GlobalFilter(filter);
-        return descriptor;
-    }
-}
-
-/// <summary>
-/// Used to extract a value to be substituted in expressions from the context.
-/// </summary>
-/// <typeparam name="TValue"></typeparam>
-public interface IValueExtractor<out TValue>
-{
-    TValue GetValue(IResolverContext context);
-}
-
-public static class ValueExtractor
-{
-    public static ValueExtractor<T> Create<T>(Func<IResolverContext, T> getter)
-    {
-        return new ValueExtractor<T>(getter);
-    }        
-}
-
-public sealed class ValueExtractor<T> : IValueExtractor<T>
-{
-    private readonly Func<IResolverContext, T> _getter;
-    
-    public ValueExtractor(Func<IResolverContext, T> getter)
-    {
-        _getter = getter;
-    }
-    
-    public T GetValue(IResolverContext context)
-    {
-        return _getter(context);
-    }
-}
-
-/// <summary>
-/// A global filter implementation that substitutes the value of the second parameter
-/// of the given expression for one extracted from the context.
-/// Should be enough for most cases.
-/// </summary>
-/// <typeparam name="T">Runtime field type</typeparam>
-/// <typeparam name="TContext">The type of the curried value</typeparam>
-public sealed class GlobalFilterWithContext<T, TContext> : IGlobalFilter<T>
-{
-#if SHOULD_CACHE
-    private const string ExpressionCacheKey = "GlobalFilterExpression";
-#endif
-    
-    public Expression<Func<T, TContext, bool>> Predicate { get; }
-    public IValueExtractor<TContext> ValueExtractor { get; }
-
-    public GlobalFilterWithContext(
-        Expression<Func<T, TContext, bool>> predicate,
-        IValueExtractor<TContext> valueExtractor)
-    {
-        Predicate = predicate;
-        ValueExtractor = valueExtractor;
-    }
-    
-    public Expression<Func<T, bool>> GetFilterT(IResolverContext context)
-    {
-#if SHOULD_CACHE
-        if (context.ContextData.TryGetValue(ExpressionCacheKey, out var result))
-            return (Expression<Func<T, bool>>) result!;
-#endif 
-        var value = ValueExtractor.GetValue(context);
-        var lambda = GlobalFilterHelper.CurrySecondParameter(Predicate, value);
-        
-#if SHOULD_CACHE
-        context.ContextData.Add(ExpressionCacheKey, lambda);
-#endif 
-        return lambda;    
-    }
-
-    public LambdaExpression GetFilter(IResolverContext context)
-    {
-        return GetFilterT(context);
     }
 }
 
@@ -224,24 +96,37 @@ public static class GlobalFilterHelper
         return new Info(isList, isNonNull, type.ToRuntimeType(), contextDataProvider.ContextData);
     }
     
-    public static LambdaExpression? GetExpression(IResolverContext context, IReadOnlyDictionary<string, object?> contextData)
+    public static LambdaExpression? GetExpression(
+        IResolverContext context,
+        IReadOnlyDictionary<string, object?> typeContextData)
     {
-        if (!contextData.TryGetValue(GlobalFilterConstants.FilterKey, out var filter))
+        if (!typeContextData.TryGetValue(GlobalFilterConstants.FilterKey, out var filter))
             return null;
-        
-        if (contextData.TryGetValue(GlobalFilterConstants.IgnoreKey, out var ignoreCondition))
-        {
-            if (ignoreCondition is IIgnoreCondition condition
-                && condition.ShouldIgnore(context))
-            {
-                return null;
-            }
-        } 
 
+        {
+            object? ignoreCondition;
+            if (typeContextData.TryGetValue(GlobalFilterConstants.IgnoreKey, out ignoreCondition))
+            {
+                var condition = (IIgnoreCondition) ignoreCondition!;
+                if (condition.ShouldIgnore(context))
+                    return null;
+            }
+            // Have to copy-paste, since IDictionary doesn't implement IReadOnlyDictionary.
+            // NOTE: the current logic is that a local ignore overrides the global one.
+            else if (context.ContextData.TryGetValue(GlobalFilterConstants.IgnoreKey, out ignoreCondition))
+            {
+                var condition = (IIgnoreCondition) ignoreCondition!;
+                if (condition.ShouldIgnore(context))
+                    return null;
+            }
+        }
+        
         if (filter is IGlobalFilter globalFilter)
             return globalFilter.GetFilter(context);
         
-        throw new GlobalFilterValidationException("Expected a lambda expression", context.Selection.Type.ToRuntimeType());
+        throw new GlobalFilterValidationException(
+            "Expected a lambda expression", 
+            context.Selection.Type.ToRuntimeType());
     }
 
     private static MethodInfo GetGenericWhere(Type type)
@@ -310,30 +195,6 @@ public static class GlobalFilterHelper
         var lambda = Expression.Lambda<Func<T, bool>>(body, queryParameter);
 
         return lambda;
-    }
-    
-    public static void AddLevelItem(this QueryableProjectionScope scope, MemberInfo member, Expression rhs)
-    {
-        var memberBinding = Expression.Bind(member, rhs);
-        scope.Level.Peek().Enqueue(memberBinding);
-    }
-   
-    // Copy-pasted from HotChocolate.Data.Projections.Expressions.ProjectionExpressionBuilder
-    // because it's internal.
-    private static readonly ConstantExpression _null =
-        Expression.Constant(null, typeof(object));
-   
-    public static Expression NotNull(Expression expression)
-    {
-        return Expression.NotEqual(expression, _null);
-    }
-    
-    public static Expression NotNullAndAlso(Expression property, Expression condition)
-    {
-        return Expression.Condition(
-            NotNull(property),
-            condition,
-            Expression.Default(property.Type));
     }
 }
 
