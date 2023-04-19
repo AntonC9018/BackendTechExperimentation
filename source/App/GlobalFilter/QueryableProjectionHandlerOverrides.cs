@@ -17,8 +17,13 @@ public class GlobalFilterQueryableProjectionListHandler : QueryableProjectionLis
             && GlobalFilterProjectionLogic.CanHandle(selection);
     }
 
-    public override QueryableProjectionContext OnBeforeEnter(QueryableProjectionContext context, ISelection selection)
+    public override QueryableProjectionContext OnBeforeEnter(
+        QueryableProjectionContext context,
+        ISelection selection)
     {
+        // This pushes the list member access onto the stack.
+        context = base.OnBeforeEnter(context, selection);
+        
         var maybeContext = GlobalFilterProjectionLogic.GetContext(
             context.ResolverContext, selection.Type);
         if (maybeContext is null)
@@ -73,6 +78,9 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         }
        
         Expression nestedProperty = Expression.Property(context.GetInstance(), propertyInfo);
+        
+        // This piece right here is basically why interceptors don't cut it.
+        // If you could change a level item after it's been pushed, it wouldn't have been necessary.
         var maybeContext = GlobalFilterProjectionLogic.GetContext(
             context.ResolverContext, selection.Type);
         
@@ -93,7 +101,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         {
             nullCheckExpression = GlobalFilterHelper.NotNull(nestedProperty);
         }
-       
+        
         // x.Field != null && Condition(x.Field)
         Expression? fullCondition = null;
         if (nullCheckExpression is not null)
