@@ -312,7 +312,7 @@ public static class GlobalFilterHelper
         return lambda;
     }
     
-    public static void AddLevel(this QueryableProjectionScope scope, MemberInfo member, Expression rhs)
+    public static void AddLevelItem(this QueryableProjectionScope scope, MemberInfo member, Expression rhs)
     {
         var memberBinding = Expression.Bind(member, rhs);
         scope.Level.Peek().Enqueue(memberBinding);

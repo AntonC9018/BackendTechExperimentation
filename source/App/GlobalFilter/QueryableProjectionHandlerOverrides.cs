@@ -9,13 +9,6 @@ using HotChocolate.Utilities;
 
 namespace efcore_transactions;
 
-public static class QueryableProjectionHelper
-{
-    
-}
-
-// Copy-pasted from the source code, because there's no other way to implement what I want.
-// Just subclassing won't cut it.
 public class GlobalFilterQueryableProjectionListHandler : QueryableProjectionListHandler
 {
     public override bool CanHandle(ISelection selection)
@@ -23,64 +16,25 @@ public class GlobalFilterQueryableProjectionListHandler : QueryableProjectionLis
         return base.CanHandle(selection)
             && GlobalFilterProjectionLogic.CanHandle(selection);
     }
-    
-    public override bool TryHandleLeave(
-        QueryableProjectionContext context,
-        ISelection selection,
-        [NotNullWhen(true)] out ISelectionVisitorAction? action)
+
+    public override QueryableProjectionContext OnBeforeEnter(QueryableProjectionContext context, ISelection selection)
     {
-        var field = selection.Field;
-        if (field.Member is null)
-        {
-            action = null;
-            return false;
-        }
-
-        var scope = context.PopScope();
-        if (scope is not QueryableProjectionScope queryableScope
-            || !context.TryGetQueryableScope(out var parentScope))
-        {
-            action = null;
-            return false;
-        }
-
-        // in case the projection is empty we do not project. This can happen if the
-        // field handler below skips fields
-        if (!queryableScope.HasAbstractTypes() &&
-            (queryableScope.Level.Count == 0 || queryableScope.Level.Peek().Count == 0))
-        {
-            action = SelectionVisitor.Continue;
-            return true;
-        }
-        
-        Expression memberAccessExpression = context.PopInstance();
         var maybeContext = GlobalFilterProjectionLogic.GetContext(
             context.ResolverContext, selection.Type);
-        Expression rhsExpression;
         if (maybeContext is null)
-        {
-            rhsExpression = memberAccessExpression;
-        }
-        else
-        {
-            var (runtimeType, filterExpression) = maybeContext.Value;
-            rhsExpression = GlobalFilterProjectionLogic.HandleListFilter(
-                memberAccessExpression,
-                filterExpression,
-                runtimeType);
-        }
-        
-        var type = field.Member.GetReturnType();
-        var select = queryableScope.CreateSelection(rhsExpression, type);
-        parentScope.AddLevel(field.Member, select);
+            return context;
 
-        action = SelectionVisitor.Continue;
-        return true;
+        var (type, filterExpression) = maybeContext.Value;
+        var instance = context.PopInstance();
+        instance = GlobalFilterProjectionLogic.HandleListFilter(
+            instance, filterExpression, type);
+        context.PushInstance(instance);
+        return context;
     }
 }
 
 // Copy-pasted from the source code, because there's no other way to implement what I want.
-// Just subclassing won't cut it.
+// Just subclassing won't cut it, while the interceptors don't happen when I need them to.
 public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFieldHandler
 {
     public override bool CanHandle(ISelection selection)
@@ -95,7 +49,6 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         [NotNullWhen(true)] out ISelectionVisitorAction? action)
     {
         var field = selection.Field;
-
         if (field.Member is null)
         {
             action = null;
@@ -111,7 +64,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         }
 
         if (!context.TryGetQueryableScope(out var parentScope))
-            throw new Exception("Throwing my own exception here, because theirs is internal");
+            throw new Exception("Throwing my own exception here, because theirs is internal.");
 
         if (field.Member is not PropertyInfo propertyInfo)
         {
@@ -163,7 +116,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
             rhsExpression = memberInit;
         }
         
-        parentScope.AddLevel(field.Member, rhsExpression);
+        parentScope.AddLevelItem(field.Member, rhsExpression);
         
         action = SelectionVisitor.Continue;
         return true;
