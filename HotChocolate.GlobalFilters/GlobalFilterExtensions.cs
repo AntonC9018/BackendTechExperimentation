@@ -17,12 +17,12 @@ public static class GlobalFilterExtensions
         Expression<Func<T, bool>> filterExpression)
         where T : class
     {
-        // We have to wrap it. 
+        // We have to wrap it.
         var filter = new ExpressionGlobalFilter(filterExpression);
         descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.FilterKey] = filter);
         return descriptor;
     }
-    
+
     /// <summary>
     /// </summary>
     public static IObjectTypeDescriptor<T> GlobalFilter<T>(
@@ -67,11 +67,47 @@ public static class GlobalFilterExtensions
         this IObjectTypeDescriptor<T> descriptor,
         IValueExtractor<TContext> contextExtractor,
         Expression<Func<T, TContext, bool>> filterExpression)
-    
+
         where T : class
     {
         var filter = new GlobalFilterWithContext<T, TContext>(filterExpression, contextExtractor);
         descriptor.GlobalFilter(filter);
+        return descriptor;
+    }
+
+    public static IObjectTypeDescriptor<T> GlobalCompareFilter<T, TContext>(
+        this IObjectTypeDescriptor<T> descriptor,
+        IValueExtractor<TContext> contextExtractor,
+        Expression<Func<T, TContext>> valueAccessor)
+
+        where T : class
+    {
+        var filter = new GlobalCompareFilter<T, TContext>(valueAccessor, contextExtractor);
+        descriptor.GlobalFilter(filter);
+        return descriptor;
+    }
+
+    /// <summary>
+    /// Works just like GlobalCompareFilter, but skips the check if the value is default.
+    /// Should be used wherever the value is nullable, or the default of the value
+    /// indicates that it's not set.
+    /// </summary>
+    public static IObjectTypeDescriptor<T> GlobalMaybeCompareFilter<T, TContext>(
+        this IObjectTypeDescriptor<T> descriptor,
+        IValueExtractor<TContext> contextExtractor,
+        Expression<Func<T, TContext?>> valueAccessor)
+
+        where T : class
+        where TContext : struct
+    {
+        var filter = new GlobalMaybeCompareFilter<T, TContext>(valueAccessor, contextExtractor);
+        descriptor.GlobalFilter(filter);
+        return descriptor;
+    }
+
+    public static IObjectFieldDescriptor DisableGlobalFilter(this IObjectFieldDescriptor descriptor)
+    {
+        descriptor.Extend().OnBeforeCreate(x => x.ContextData[GlobalFilterConstants.DisableKey] = true);
         return descriptor;
     }
 
@@ -86,5 +122,6 @@ public static class GlobalFilterExtensions
         descriptor.RegisterFieldHandler<GlobalFilterQueryableProjectionListHandler>();
         descriptor.RegisterFieldHandler<GlobalFilterQueryableProjectionFieldHandler>();
         return descriptor;
-    } 
+    }
+
 }

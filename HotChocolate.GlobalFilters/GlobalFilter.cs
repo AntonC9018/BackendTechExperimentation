@@ -3,8 +3,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using HotChocolate.Data.Projections.Expressions;
 using HotChocolate.Execution.Processing;
+using HotChocolate.Internal;
 using HotChocolate.Resolvers;
 using HotChocolate.Types;
+using HotChocolate.Types.Pagination;
 
 namespace HotChocolate.GlobalFilters;
 
@@ -12,6 +14,7 @@ public static class GlobalFilterConstants
 {
     public const string FilterKey = "GlobalFilter";
     public const string IgnoreKey = "GlobalFilterIgnore";
+    public const string DisableKey = "GlobalFilterDisable";
 }
 
 public sealed class ExpressionGlobalFilter : IGlobalFilter
@@ -36,7 +39,7 @@ public sealed class ExpressionGlobalFilter : IGlobalFilter
                 "The expression must have 2 parameters",
                 nameof(expression));
         }
-        
+
         if (expression.Parameters.Count != 2
             && expression.Parameters[1].Type != typeof(bool))
         {
@@ -56,9 +59,13 @@ public static class GlobalFilterHelper
         bool IsNonNull,
         Type UnwrappedRuntimeType,
         IReadOnlyDictionary<string, object?> ContextData);
-    
+
     public static Info? GetTypeInfo(IType type)
     {
+        // Unwrap connection type
+        if (type is IConnectionType connectionType)
+            type = connectionType.EdgeType.NodeType;
+
         bool isNonNull;
         {
             if (type is NonNullType nonNullType)
@@ -71,7 +78,7 @@ public static class GlobalFilterHelper
                 isNonNull = false;
             }
         }
-        
+
         bool isList;
         {
             if (type is ListType listType)
@@ -89,13 +96,13 @@ public static class GlobalFilterHelper
             if (type is NonNullType nonNullType)
                 type = nonNullType.Type;
         }
-        
+
         if (type is not IHasReadOnlyContextData contextDataProvider)
             return null;
-        
+
         return new Info(isList, isNonNull, type.ToRuntimeType(), contextDataProvider.ContextData);
     }
-    
+
     public static LambdaExpression? GetExpression(
         IResolverContext context,
         IReadOnlyDictionary<string, object?> typeContextData)
@@ -120,12 +127,12 @@ public static class GlobalFilterHelper
                     return null;
             }
         }
-        
+
         if (filter is IGlobalFilter globalFilter)
             return globalFilter.GetFilter(context);
-        
+
         throw new GlobalFilterValidationException(
-            "Expected a lambda expression", 
+            "Expected a lambda expression",
             context.Selection.Type.ToRuntimeType());
     }
 
@@ -137,11 +144,11 @@ public static class GlobalFilterHelper
             {
                 if (m.Name != "Where")
                     return false;
-                
+
                 var parameters = m.GetParameters();
                 if (parameters.Length != 2)
                     return false;
-                    
+
                 Type[] genericArgsToFunc;
                 if (type == typeof(Enumerable))
                 {
@@ -158,14 +165,14 @@ public static class GlobalFilterHelper
                 {
                     throw new InvalidOperationException($"Wrong type {type}");
                 }
-    
+
                 return genericArgsToFunc.Length == 2;
             });
     }
 
     public static readonly MethodInfo EnumerableWhereWithoutIndexMethod = GetGenericWhere(typeof(Enumerable));
     public static readonly MethodInfo QueryableWhereWithoutIndexMethod = GetGenericWhere(typeof(Queryable));
-    
+
     public static IQueryable WhereT(this IQueryable query, LambdaExpression expression, Type expectedType)
     {
         var genericWhere = QueryableWhereWithoutIndexMethod.MakeGenericMethod(expectedType);
@@ -182,15 +189,15 @@ public static class GlobalFilterHelper
         var expression = originalPredicate;
         var queryParameter = expression.Parameters[0];
         var contextParameter = expression.Parameters[1];
-        
+
         // (x, u) => x + u   -->   x + u
         var body = expression.Body;
-        
+
         // x + u  -->   x + box.value
-        var boxAccessExpression = box.MakeMemberAccess(); 
+        var boxAccessExpression = box.MakeMemberAccess();
         var visitor = new ReplaceVariableExpressionVisitor(boxAccessExpression, contextParameter);
         body = visitor.Visit(body);
-        
+
         // x + box.value  -->  x => x + box.value
         var lambda = Expression.Lambda<Func<T, bool>>(body, queryParameter);
 
@@ -232,7 +239,7 @@ public sealed class GlobalFilterApplicationMiddleware
     {
         _next = next;
     }
-    
+
     public async Task InvokeAsync(IMiddlewareContext context)
     {
         await _next(context);
@@ -244,7 +251,7 @@ public sealed class GlobalFilterApplicationMiddleware
         var result = context.Result;
         if (result is null)
             return;
-       
+
         // Handle the potential case where the result is not a list.
         if (result.GetType().IsAssignableTo(runtimeType))
         {
@@ -252,14 +259,14 @@ public sealed class GlobalFilterApplicationMiddleware
             var passes = (bool) lambda.DynamicInvoke(result)!;
             if (passes)
                 return;
-            
+
             context.Result = null;
             return;
         }
 
         if (context.Result is IQueryable query)
             context.Result = query.WhereT(filterExpression, runtimeType);
-        
+
         else if (context.Result is IEnumerable enumerable)
             context.Result = enumerable.AsQueryable().WhereT(filterExpression, runtimeType);
     }
@@ -272,7 +279,7 @@ public sealed class GlobalFilterApplicationMiddleware
 public sealed class GlobalFilterValidationException : Exception
 {
     public Type Type { get; }
-    
+
     public GlobalFilterValidationException(string message, Type type) : base(message)
     {
         Type = type;
@@ -306,7 +313,7 @@ public static class GlobalFilterProjectionLogic
         // p => condition(p)  -->  condition(x.Prop)
         var expressionToBeChecked = ReplaceVariableExpressionVisitor.ReplaceParameterAndGetBody(
             filterExpression, memberAccessExpression);
-        return expressionToBeChecked; 
+        return expressionToBeChecked;
     }
 
     public static (Type RuntimeType, LambdaExpression FilterExpression)? GetContext(
@@ -318,16 +325,22 @@ public static class GlobalFilterProjectionLogic
             return null;
         return (info.UnwrappedRuntimeType, filterExpression);
     }
-    
+
     public static bool CanHandle(ISelection selection)
     {
+        if (selection.Field.ContextData.TryGetValue(GlobalFilterConstants.DisableKey, out var disable)
+            && disable is true)
+        {
+            return false;
+        }
+
         var info = GlobalFilterHelper.GetTypeInfo(selection.Type);
         if (info is null)
             return false;
 
         var infoValue = info.Value;
         var contextData = infoValue.ContextData;
-        
+
         bool hasFilter = contextData.ContainsKey(GlobalFilterConstants.FilterKey);
         if (!hasFilter)
             return false;
@@ -336,13 +349,13 @@ public static class GlobalFilterProjectionLogic
         {
             throw new GlobalFilterValidationException(message, selection.Type.ToRuntimeType());
         }
-        
+
         if (infoValue is { IsList: false, IsNonNull: true })
             Throw("Cannot be applied to non-nullable non-list fields.");
-        
+
         if (infoValue is { IsList: true, IsNonNull: false })
             Throw("For now, cannot be applied to nullable lists.");
-        
+
         return true;
     }
 }

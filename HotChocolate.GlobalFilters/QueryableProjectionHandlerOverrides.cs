@@ -15,12 +15,12 @@ public static class ProjectionHelper
         var memberBinding = Expression.Bind(member, rhs);
         scope.Level.Peek().Enqueue(memberBinding);
     }
-   
+
     // Copy-pasted from HotChocolate.Data.Projections.Expressions.ProjectionExpressionBuilder
     // because it's internal.
-    private static readonly ConstantExpression _null =
+    internal static readonly ConstantExpression _null =
         Expression.Constant(null, typeof(object));
-   
+
     public static Expression NotNull(Expression expression)
     {
         return Expression.NotEqual(expression, _null);
@@ -41,7 +41,7 @@ public class GlobalFilterQueryableProjectionListHandler : QueryableProjectionLis
     {
         // This pushes the list member access onto the stack.
         context = base.OnBeforeEnter(context, selection);
-        
+
         var maybeContext = GlobalFilterProjectionLogic.GetContext(
             context.ResolverContext, selection.Type);
         if (maybeContext is null)
@@ -65,7 +65,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         return base.CanHandle(selection)
             && GlobalFilterProjectionLogic.CanHandle(selection);
     }
-    
+
     public override bool TryHandleLeave(
         QueryableProjectionContext context,
         ISelection selection,
@@ -94,14 +94,14 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
             action = SelectionVisitor.Skip;
             return true;
         }
-       
+
         Expression nestedProperty = Expression.Property(context.GetInstance(), propertyInfo);
-        
+
         // This piece right here is basically why interceptors don't cut it.
         // If you could change a level item after it's been pushed, it wouldn't have been necessary.
         var maybeContext = GlobalFilterProjectionLogic.GetContext(
             context.ResolverContext, selection.Type);
-        
+
         // Condition(x.Field)
         Expression? checkExpression = null;
         if (maybeContext is not null)
@@ -110,7 +110,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
                 nestedProperty,
                 maybeContext.Value.FilterExpression);
         }
-        
+
         // x.Field != null
         Expression? nullCheckExpression = null;
         if (context.InMemory
@@ -119,7 +119,7 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         {
             nullCheckExpression = ProjectionHelper.NotNull(nestedProperty);
         }
-        
+
         // x.Field != null && Condition(x.Field)
         Expression? fullCondition = null;
         if (nullCheckExpression is not null)
@@ -141,9 +141,9 @@ public class GlobalFilterQueryableProjectionFieldHandler : QueryableProjectionFi
         {
             rhsExpression = memberInit;
         }
-        
+
         parentScope.AddLevelItem(field.Member, rhsExpression);
-        
+
         action = SelectionVisitor.Continue;
         return true;
     }
