@@ -1,0 +1,3 @@
+[submodule "submodules/Flowqe.HotChocolate.GlobalFilters"]
+	path = submodules/Flowqe.HotChocolate.GlobalFilters
+	url = https://dev.azure.com/flowqe-inc/Flowqe.HotChocolate/_git/Flowqe.HotChocolate.GlobalFilters
