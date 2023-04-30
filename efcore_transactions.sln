@@ -1,6 +1,8 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "efcore_transactions", "source\App\efcore_transactions.csproj", "{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Flowqe.HotChocolate.GlobalFilters", "submodules\Flowqe.HotChocolate.GlobalFilters\Flowqe.HotChocolate.GlobalFilters\Flowqe.HotChocolate.GlobalFilters.csproj", "{462206C4-E183-42C3-BDB8-384187149644}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -11,6 +13,10 @@ Global
 		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A5A4607-FE45-4E3D-99B3-2AB776FB8677}.Release|Any CPU.Build.0 = Release|Any CPU
+		{462206C4-E183-42C3-BDB8-384187149644}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{462206C4-E183-42C3-BDB8-384187149644}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{462206C4-E183-42C3-BDB8-384187149644}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{462206C4-E183-42C3-BDB8-384187149644}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

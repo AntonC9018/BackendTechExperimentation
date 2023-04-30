@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <GraphQlSubmodulePath>$(MSBuildThisFileDirectory)submodules\graphql-platform\</GraphQlSubmodulePath>
-    <HotChocolatePath>$(GraphQlSubmodulePath)src\HotChocolate\</HotChocolatePath>
+    <SubmodulesPath>$(MSBuildThisFileDirectory)submodules\</SubmodulesPath>
   </PropertyGroup>
 </Project>

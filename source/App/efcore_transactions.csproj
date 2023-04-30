@@ -9,6 +9,7 @@
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <GlobalFilters>Flowqe.HotChocolate.GlobalFilters</GlobalFilters>
   </PropertyGroup>
   
   <ItemGroup>
@@ -19,6 +20,13 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="HotChocolate_GraphQL">
+    <PackageReference Include="HotChocolate.Data.EntityFramework" Version="13.0.5"/>
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.0.5"/>
+    <PackageReference Include="HotChocolate.AspNetCore" Version="13.0.5"/>
+    <ProjectReference Include="$(SubmodulesPath)$(GlobalFilters)\$(GlobalFilters)\$(GlobalFilters).csproj" />
   </ItemGroup>
 
 </Project>
