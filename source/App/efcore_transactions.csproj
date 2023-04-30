@@ -19,11 +19,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    
-    <ProjectReference Include="$(HotChocolatePath)Data\src\EntityFramework\HotChocolate.Data.EntityFramework.csproj" />
-    <ProjectReference Include="$(HotChocolatePath)AspNetCore\src\AspNetCore\HotChocolate.AspNetCore.csproj" />
-    <ProjectReference Include="$(HotChocolatePath)AspNetCore\src\AspNetCore.Authorization\HotChocolate.AspNetCore.Authorization.csproj" />
-    <ProjectReference Include="..\..\HotChocolate.GlobalFilters\HotChocolate.GlobalFilters.csproj" />
   </ItemGroup>
 
 </Project>
