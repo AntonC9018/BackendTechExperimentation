@@ -79,10 +79,16 @@ public static class Seeder
     public static async Task Seed(ApplicationDbContext context)
     {
         await context.Database.EnsureCreatedAsync();
+        await SeedPeople(context);
+        await SeedCountries(context);
+    }
+    
+    public static async Task SeedPeople(ApplicationDbContext context)
+    {
         int count = await context.People.CountAsync();
         if (count >= 5)
             return;
-        
+
         var people = new List<Person>
         {
             new()
@@ -129,6 +135,67 @@ public static class Seeder
         people[1].ParentId = people[2].Id;
         people[2].ParentId = people[3].Id;
         people[4].ParentId = people[3].Id;
+        await context.SaveChangesAsync();
+    }
+
+    public static async Task SeedCountries(ApplicationDbContext context)
+    {
+        int count = await context.Set<Country>().CountAsync();
+        if (count >= 5)
+            return;
+
+        var countries = new List<Country>
+        {
+            new()
+            {
+                Name = "USA",
+            },
+            new()
+            {
+                Name = "Canada",
+            },
+            new()
+            {
+                Name = "Mexico",
+            },
+            new()
+            {
+                Name = "France",
+            },
+            new()
+            {
+                Name = "Germany",
+            },
+        };
+        context.Set<Country>().AddRange(countries);
+        await context.SaveChangesAsync();
+
+        var people = await context.People.ToListAsync();
+        people[0].Citizenships = new List<PersonCitizenship>
+        {
+            new()
+            {
+                CountryId = 1,
+            },
+            new()
+            {
+                CountryId = 2,
+            },
+            new()
+            {
+                CountryId = 3,
+            }
+        };
+        for (int i = 1; i < people.Count; i++)
+        {
+            people[i].Citizenships = new List<PersonCitizenship>
+            {
+                new()
+                {
+                    CountryId = i,
+                }
+            };
+        }
         await context.SaveChangesAsync();
     }
 }

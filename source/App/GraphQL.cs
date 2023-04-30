@@ -75,8 +75,14 @@ public sealed class PersonType : ObjectType<Person>
     {
         descriptor.BindFieldsImplicitly();
         descriptor.GlobalFilterIgnoreCondition(IsUserAdminIgnoreCondition.Instance);
-        descriptor.GlobalFilter(UserIdExtractor.Instance,
+        
+        var filter = descriptor.CreateGlobalFilterWithContext(
+            UserIdExtractor.Instance,
             (person, userId) => userId != null && person.Id == userId);
+        descriptor.Owner(filter);
+
+        var rootFilter = ExpressionGlobalFilter.Create((Person p) => !p.Name.Contains("John"));
+        descriptor.PublicWithRootFilter(rootFilter);
     }
 }
 
