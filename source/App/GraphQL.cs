@@ -1,6 +1,4 @@
-﻿using HotChocolate.Data;
-using HotChocolate.GlobalFilters;
-using HotChocolate.Types;
+﻿using HotChocolate.GlobalFilters;
 using Microsoft.EntityFrameworkCore;
 
 namespace efcore_transactions;
@@ -75,11 +73,10 @@ public sealed class PersonType : ObjectType<Person>
 {
     protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
     {
-        descriptor.Authorize();
-        descriptor.GlobalFilterIgnoreCondition(IsUserAdminIgnoreCondition.Instance);
-        descriptor.GlobalFilter(UserNameExtractor.Instance,
-            (p, name) => p.Name.Contains(name));
         descriptor.BindFieldsImplicitly();
+        descriptor.GlobalFilterIgnoreCondition(IsUserAdminIgnoreCondition.Instance);
+        descriptor.GlobalFilter(UserIdExtractor.Instance,
+            (person, userId) => userId != null && person.Id == userId);
     }
 }
 
@@ -87,9 +84,26 @@ public sealed class ProjectType : ObjectType<Project>
 {
     protected override void Configure(IObjectTypeDescriptor<Project> descriptor)
     {
-        descriptor.GlobalFilterIgnoreCondition(IsUserAdminIgnoreCondition.Instance);
-        descriptor.GlobalFilter(p => p.ProjectName.Contains(" "));
-        descriptor.Field(x => x.ProjectName);
+        descriptor.BindFieldsImplicitly();
+        descriptor.OwnedBy<Project, PersonType, Person>(p => p.Person);
+    }
+}
+
+public sealed class CountryType : ObjectType<Country>
+{
+    protected override void Configure(IObjectTypeDescriptor<Country> descriptor)
+    {
+        descriptor.BindFieldsImplicitly();
+        descriptor.Public();
+    }
+}
+
+public sealed class PersonCitizenshipType : ObjectType<PersonCitizenship>
+{
+    protected override void Configure(IObjectTypeDescriptor<PersonCitizenship> descriptor)
+    {
+        descriptor.BindFieldsImplicitly();
+        descriptor.OwnedBy<PersonCitizenship, PersonType, Person>(p => p.Person);
     }
 }
 
@@ -97,18 +111,29 @@ public sealed class QueryType : ObjectType
 {
     protected override void Configure(IObjectTypeDescriptor descriptor)
     {
-        descriptor
-            .Field("test")
-            .Type<NonNullType<ListType<NonNullType<PersonType>>>>()
-            .UseDbContext<ApplicationDbContext>()
-            .UseProjection()
-            .UseGlobalFilter()
-            .UseFiltering()
-            .UseSorting()
-            .Resolve(ctx => ctx
-                .DbContext<ApplicationDbContext>()
-                .Set<Person>()
-                .AsQueryable()
-                .AsNoTracking());
+        void CreateField<TQuery, TEntity>() 
+            where TQuery : ObjectType<TEntity>
+            where TEntity : class
+        {
+            var name = typeof(TEntity).Name;
+            descriptor
+                .Field(name)
+                .Type<NonNullType<ListType<NonNullType<TQuery>>>>()
+                .UseDbContext<ApplicationDbContext>()
+                .UseProjection()
+                .UseGlobalFilter()
+                .UseFiltering()
+                .UseSorting()
+                .Resolve(ctx => ctx
+                    .DbContext<ApplicationDbContext>()
+                    .Set<TEntity>()
+                    .AsQueryable()
+                    .AsNoTracking());
+        }
+        
+        CreateField<PersonType, Person>();
+        CreateField<ProjectType, Project>();
+        CreateField<CountryType, Country>();
+        CreateField<PersonCitizenshipType, PersonCitizenship>();
     }
 }

@@ -25,3 +25,16 @@ public class UserNameExtractor : IValueExtractor<string>
         return userName;
     }
 }
+
+public class UserIdExtractor : IValueExtractor<long?>
+{
+    public static readonly UserIdExtractor Instance = new();
+    public long? GetValue(IResolverContext context)
+    {
+        var httpContext = context.Services.GetRequiredService<IHttpContextAccessor>().HttpContext!;
+        var userName = httpContext.User.Claims.First(c => c.Type == ClaimTypes.Name).Value;
+        if (long.TryParse(userName, out long result))
+            return result;
+        return null;
+    }
+}

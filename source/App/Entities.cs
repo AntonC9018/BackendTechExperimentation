@@ -13,6 +13,16 @@ public class Person
     public long? ParentId { get; set; }
     public Person? Parent { get; set; }
     public List<Person> Children { get; set; } = new();
+    
+    public List<PersonCitizenship> Citizenships { get; set; }
+}
+
+public class PersonCitizenship
+{
+    public long PersonId { get; set; }
+    public Person Person { get; set; }
+    public long CountryId { get; set; }
+    public Country Country { get; set; }
 }
 
 public class Project
@@ -21,6 +31,14 @@ public class Project
     public long PersonId { get; set; }
     public Person Person { get; set; }
     public string ProjectName { get; set; }
+}
+
+public class Country
+{
+    public long Id { get; set; }
+    public string Name { get; set; }
+    
+    public List<PersonCitizenship> Citizenships { get; set; } = new();
 }
 
 public sealed class ApplicationDbContext : DbContext
@@ -42,6 +60,17 @@ public sealed class ApplicationDbContext : DbContext
             .HasOne(p => p.Parent)
             .WithMany(p => p.Children)
             .HasForeignKey(p => p.ParentId);
+
+        modelBuilder.Entity<Person>()
+            .HasMany(p => p.Citizenships)
+            .WithOne(c => c.Person);
+
+        modelBuilder.Entity<PersonCitizenship>()
+            .HasOne(p => p.Country)
+            .WithMany(c => c.Citizenships);
+
+        modelBuilder.Entity<PersonCitizenship>()
+            .HasKey(pc => new { pc.PersonId, pc.CountryId });
     }
 }
 
