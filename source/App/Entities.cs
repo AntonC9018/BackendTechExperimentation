@@ -16,6 +16,8 @@ public class Person
     public Person? Parent { get; set; }
     public List<Person> Children { get; set; } = new();
     
+    public string Password { get; set; }
+    
     public List<PersonCitizenship> Citizenships { get; set; }
 }
 
@@ -73,6 +75,10 @@ public sealed class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<PersonCitizenship>()
             .HasKey(pc => new { pc.PersonId, pc.CountryId });
+
+        modelBuilder.Entity<Person>()
+            .Property(p => p.Password)
+            .HasDefaultValue("password");
     }
 }
 

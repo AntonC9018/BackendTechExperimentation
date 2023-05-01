@@ -84,9 +84,13 @@ public sealed class PersonType : ObjectType<Person>
             UserIdExtractor.Instance,
             (person, userId) => userId != null && person.Id == userId);
         descriptor.Owner(filter);
+        
+        // var rootFilter = ExpressionGlobalFilter.Create((Person p) => !p.Name.Contains("John"));
+        // descriptor.PublicWithRootFilter(rootFilter);
+        descriptor.Public();
 
-        var rootFilter = ExpressionGlobalFilter.Create((Person p) => !p.Name.Contains("John"));
-        descriptor.PublicWithRootFilter(rootFilter);
+        descriptor.Field(x => x.Password).Owned();
+        descriptor.Field(x => x.Name).Owned();
     }
 }
 
@@ -95,7 +99,7 @@ public sealed class ProjectType : ObjectType<Project>
     protected override void Configure(IObjectTypeDescriptor<Project> descriptor)
     {
         descriptor.BindFieldsImplicitly();
-        descriptor.OwnedBy<Project, PersonType, Person>(p => p.Person);
+        descriptor.OwnedBy(p => p.Person);
     }
 }
 
@@ -113,7 +117,7 @@ public sealed class PersonCitizenshipType : ObjectType<PersonCitizenship>
     protected override void Configure(IObjectTypeDescriptor<PersonCitizenship> descriptor)
     {
         descriptor.BindFieldsImplicitly();
-        descriptor.OwnedBy<PersonCitizenship, PersonType, Person>(p => p.Person);
+        descriptor.OwnedBy(p => p.Person);
     }
 }
 

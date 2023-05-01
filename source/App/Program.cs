@@ -34,6 +34,7 @@ builder.Services.AddEndpointsApiExplorer();
         var provider = new QueryableProjectionProvider(x =>
         {
             x.AddGlobalFilterHandlers();
+            x.AddOwnedEdgeHandlers();
             x.AddDefaults();
         });
         descriptor.Provider(provider);
@@ -61,7 +62,6 @@ app.MapGraphQLSchema();
     using var dbContext = dbContextFactory.CreateDbContext();
 
     await Seeder.Seed(dbContext);
-    await TestProjections.Test(dbContext);
 }
 
 app.Run();
