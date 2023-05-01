@@ -1,6 +1,9 @@
-﻿using System.Security.Claims;
+﻿using System.Linq;
+using System.Security.Claims;
 using HotChocolate.GlobalFilters;
 using HotChocolate.Resolvers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace efcore_transactions;
 

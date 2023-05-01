@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,9 +22,9 @@
   </ItemGroup>
 
   <ItemGroup Label="HotChocolate_GraphQL">
-    <PackageReference Include="HotChocolate.Data.EntityFramework" Version="13.0.5"/>
-    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.0.5"/>
-    <PackageReference Include="HotChocolate.AspNetCore" Version="13.0.5"/>
+    <PackageReference Include="HotChocolate.Data.EntityFramework" Version="13.0.5" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.0.5" />
+    <PackageReference Include="HotChocolate.AspNetCore" Version="13.0.5" />
     <ProjectReference Include="$(SubmodulesPath)$(GlobalFilters)\$(GlobalFilters)\$(GlobalFilters).csproj" />
   </ItemGroup>
 

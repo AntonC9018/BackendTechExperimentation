@@ -2,7 +2,10 @@ using efcore_transactions;
 using HotChocolate.Data;
 using HotChocolate.Data.Projections.Expressions;
 using HotChocolate.GlobalFilters;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +61,7 @@ app.MapGraphQLSchema();
     using var dbContext = dbContextFactory.CreateDbContext();
 
     await Seeder.Seed(dbContext);
+    await TestProjections.Test(dbContext);
 }
 
 app.Run();
