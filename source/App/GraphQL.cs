@@ -1,4 +1,5 @@
 ﻿using HotChocolate.GlobalFilters;
+using HotChocolate.GlobalFilters.Internal;
 using Microsoft.EntityFrameworkCore;
 
 namespace efcore_transactions;
