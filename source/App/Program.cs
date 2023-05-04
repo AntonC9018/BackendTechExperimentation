@@ -47,6 +47,12 @@ builder.Services.AddEndpointsApiExplorer();
     graph.InitializeOnStartup();
     graph.AddType<PersonType>();
     graph.AddType<ProjectType>();
+    graph.UseAutomaticPersistedQueryPipeline();
+    graph.AddInMemoryQueryStorage();
+    
+    builder.Services.AddMemoryCache(options =>
+    {
+    });
 }
 
 var app = builder.Build();
