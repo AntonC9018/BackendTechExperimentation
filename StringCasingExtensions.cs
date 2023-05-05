@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace efcore_transactions;
 
@@ -30,7 +31,7 @@ public static class StringCasingExtensions
         Separator,
     }
     
-    private static void ToUpperSnakeCase(StringBuilder builderValue, ReadOnlySpan<char> input)
+    public static void ToUpperSnakeCase(StringBuilder builderValue, ReadOnlySpan<char> input)
     {
         var currentKind = SnakeLetterKind.Initial;
         const char separator = '_';
@@ -81,5 +82,34 @@ public static class StringCasingExtensions
                 }
             }
         }
+    }
+    
+    public static string CamelCaseToUpperSnakeCase(this string input)
+    {
+        var output = Regex.Replace(
+            input: input,
+            pattern: _RegexString,
+            replacement: "$1_$2"
+        );
+        output = output.ToUpper();
+        return output;
+    }
+
+    private const string _RegexString = @"(\G(?!^)|\b(?:[A-Z]{2}|[a-zA-Z][a-z]*))(?=[a-zA-Z]{2,}|\d)([A-Z](?:[A-Z]|[a-z]*)|\d+)";
+
+    private static readonly Regex _ReplaceRegex = new Regex(_RegexString);
+    
+    private static readonly Regex _ReplaceRegexCompiled = new Regex(_RegexString, RegexOptions.Compiled);
+    
+    public static string CamelCaseToUpperSnakeCase_CachedRegex(this string input)
+    {
+        var output = _ReplaceRegex.Replace(input, "$1_$2");
+        return output.ToUpper();
+    }
+
+    public static string CamelCaseToUpperSnakeCase_CompiledRegex(this string input)
+    {
+        var output = _ReplaceRegexCompiled.Replace(input, "$1_$2");
+        return output.ToUpper();
     }
 }
