@@ -16,12 +16,11 @@ public static class ConventionHelper
             // Since the table name is set via a convention when the model
             // is initially created, we can't reliably check if the value has been overwritten.
             // However, with EF Core 7 we can define a custom convention to override that.
-            if (false)
+            if (true)
             {
-                var tableName = entity.GetTableName();
-                var tableName1 = entity.FindAnnotation(RelationalAnnotationNames.TableName);
-                if (tableName1 is null)
-                    entity.SetTableName(entity.GetDefaultTableName());
+                var tableName = entity.GetTableName() ?? throw new NotImplementedException();
+                var newName = convention(tableName);
+                entity.SetTableName(newName);
             }
 
             foreach (var p in entity.GetProperties())
