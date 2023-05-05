@@ -18,4 +18,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="source\App\obj\efcore_transactions.csproj.nuget.dgspec.json" />
+    <_ContentIncludedByDefault Remove="source\App\obj\project.assets.json" />
+    <_ContentIncludedByDefault Remove="source\App\obj\project.packagespec.json" />
+  </ItemGroup>
+
 </Project>

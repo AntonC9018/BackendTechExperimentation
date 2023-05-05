@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace efcore_transactions;
 
@@ -40,6 +42,12 @@ public sealed class ApplicationDbContext : DbContext
         modelBuilder.Entity<Person>()
             .HasMany(p => p.Projects)
             .WithOne(p => p.Person);
+
+        var person = modelBuilder .Entity<Person>();
+        var name = person.Property(p => p.Name);
+        name.HasColumnName("Name");
+
+        modelBuilder.SetColumnNamesByIfConventionNotSet(defaultName => defaultName.ToUpperSnakeCase());
     }
 }
 
