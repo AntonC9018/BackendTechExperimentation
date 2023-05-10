@@ -1,25 +1,59 @@
+using System.Text;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
 using efcore_transactions;
-using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
+BenchmarkRunner.Run<Benchmarks>();
 
-builder.Services.AddDbContext<ApplicationDbContext>(c =>
+public class Benchmarks
 {
-    c.UseSqlServer(builder.Configuration.GetConnectionString("ProjectManagement"));
-});
+    public static IEnumerable<string> Params
+    {
+        get
+        {
+            yield return "simpleCamelCaseThing";
+            yield return "longerCamelCaseThing" + string.Join("", Enumerable.Repeat("LongerCamelCaseThing", 10));
+            yield return "longerCamelCaseThing" + string.Join("", Enumerable.Repeat("LongerCamelCaseThing", 100));
+            yield return "longerCamelCaseThing" + string.Join("", Enumerable.Repeat("LongerCamelCaseThing", 1000));
+            yield return "рашенКамелКейсThing";
+            yield return "N&&#oT___Camel   Case thing *(#(*&78932789";
+        }
+    }
+    
+    [Benchmark]
+    [ArgumentsSource(nameof(Params))]
+    public string Span_NewStringBuilderEachTime(string input)
+    {
+        var stringBuilder = new StringBuilder();
+        StringCasingExtensions.ToUpperSnakeCase(stringBuilder, input);
+        return stringBuilder.ToString();
+    }
 
-var app = builder.Build();
+    [Benchmark]
+    [ArgumentsSource(nameof(Params))]
+    public string Span_ThreadLocalStringBuilder(string input)
+    {
+        return input.ToUpperSnakeCase();
+    }
 
-app.UseDeveloperExceptionPage();
+    [Benchmark]
+    [ArgumentsSource(nameof(Params))]
+    public string Regex_NoCaching(string input)
+    {
+        return input.CamelCaseToUpperSnakeCase();
+    }
 
-{
-    using var scope = app.Services.CreateScope();
-    var provider = scope.ServiceProvider;
-    var context = provider.GetRequiredService<ApplicationDbContext>();
-    await context.Database.EnsureDeletedAsync();
-    await context.Database.EnsureCreatedAsync();
-    int count = await context.Set<Person>().CountAsync();
-    Console.WriteLine(count);
+    [Benchmark]
+    [ArgumentsSource(nameof(Params))]
+    public string Regex_Caching(string input)
+    {
+        return input.CamelCaseToUpperSnakeCase_CachedRegex();
+    }
+    
+    [Benchmark]
+    [ArgumentsSource(nameof(Params))]
+    public string Regex_Compiled(string input)
+    {
+        return input.CamelCaseToUpperSnakeCase_CompiledRegex();
+    }
 }
-
-app.Run();
